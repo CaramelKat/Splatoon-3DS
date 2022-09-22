@@ -1,0 +1,10 @@
+.idea/
+build/
+old/
+*.elf
+*.3dsx
+*.smdh
+a.out
+
+# ash: Remove this later!
+models/
