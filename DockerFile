@@ -1,0 +1,5 @@
+FROM devkitpro/devkitarm
+
+WORKDIR /Splatoon3DS
+
+CMD rm -rf build && make -f Makefile
