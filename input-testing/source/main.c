@@ -16,7 +16,7 @@
 #include <3ds.h>
 #include <stdio.h>
 #include <math.h>
-#include "accelerometer.h"
+#include "lib/gyro.h"
 
 #define PI 3.14159265
 
@@ -115,9 +115,9 @@ int main(int argc, char **argv)
         printf("\x1b[6;1HGyro Data:");
         printf("\x1b[7;1HX: %04d Y: %04d Z: %04d", (gyroPos.x), (gyroPos.y), (gyroPos.z));
 
-        accelVector NewAccPos = getPosition();
+        accelVector positionVect = getPosition();
         printf("\x1b[9;1HAcc Data:");
-        printf("\x1b[10;1HX: %04d Y: %04d Z: %04d", accPos.x / 10, accPos.y / 10, accPos.z / 10);
+        printf("\x1b[10;1HX: %04d Y: %04d Z: %04d", positionVect.x, positionVect.y, positionVect.z);
 
         /*if(accPos.y < -300) {
             printf("\x1b[12;1H   |   ");
@@ -136,13 +136,13 @@ int main(int argc, char **argv)
             printf("\x1b[13;1H       ");
         }*/
 
-        float accelerationX = (signed int)(((signed int)accPos.x) * 3.9);
+        /*float accelerationX = (signed int)(((signed int)accPos.x) * 3.9);
         float accelerationY = (signed int)(((signed int)accPos.y) * 3.9);
         float accelerationZ = (signed int)(((signed int)accPos.z) * 3.9);
 
         float pitch = 180 * atan (accelerationX/sqrt(accelerationY*accelerationY + accelerationZ*accelerationZ))/M_PI;
         float roll = 180 * atan (accelerationY/sqrt(accelerationX*accelerationX + accelerationZ*accelerationZ))/M_PI;
-        float yaw = 180 * atan (accelerationZ/sqrt(accelerationX*accelerationX + accelerationZ*accelerationZ))/M_PI;
+        float yaw = 180 * atan (accelerationZ/sqrt(accelerationX*accelerationX + accelerationZ*accelerationZ))/M_PI;*/
 
         /*if (gyroPos.y > 200 || gyroPos.y < -200) {
             yaw += gyroPos.y / 250;
@@ -150,8 +150,8 @@ int main(int argc, char **argv)
         if (gyroPos.x > 200 || gyroPos.x < -200) {
             pitch += gyroPos.x / 200;
         }*/
-        printf("\x1b[12;1HYaw: %1f Pitch: %1f Roll: %1f", roundf(yaw), roundf(pitch), roundf(roll));
-        printf("\x1b[13;1H");
+        //printf("\x1b[12;1HYaw: %1f Pitch: %1f Roll: %1f", roundf(yaw), roundf(pitch), roundf(roll));
+        //printf("\x1b[13;1H");
         /*char line[48] = [" ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ",
                           "x", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " "];
         int j;
