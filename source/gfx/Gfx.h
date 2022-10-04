@@ -31,7 +31,7 @@ namespace Gfx {
         DVLB_s *vshader_dvlb;
         shaderProgram_s shader;
         int uLoc_projection, uLoc_modelView;
-        int uLoc_lightVec, uLoc_lightHalfVec, uLoc_lightClr, uLoc_material;
+        //int uLoc_lightVec, uLoc_lightHalfVec, uLoc_lightClr, uLoc_material;
 
         // Lighting
        /* C3D_LightEnv light_env;

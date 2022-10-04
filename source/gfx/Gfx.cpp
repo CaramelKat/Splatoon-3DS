@@ -15,21 +15,18 @@ Gfx::State::State() {
     // Get the location of the uniforms
     uLoc_projection   = shaderInstanceGetUniformLocation(shader.vertexShader, "projection");
     uLoc_modelView    = shaderInstanceGetUniformLocation(shader.vertexShader, "modelView");
-    uLoc_lightVec     = shaderInstanceGetUniformLocation(shader.vertexShader, "lightVec");
+    /*uLoc_lightVec     = shaderInstanceGetUniformLocation(shader.vertexShader, "lightVec");
     uLoc_lightHalfVec = shaderInstanceGetUniformLocation(shader.vertexShader, "lightHalfVec");
     uLoc_lightClr     = shaderInstanceGetUniformLocation(shader.vertexShader, "lightClr");
-    uLoc_material     = shaderInstanceGetUniformLocation(shader.vertexShader, "material");
+    uLoc_material     = shaderInstanceGetUniformLocation(shader.vertexShader, "material");*/
 
     // Compute the projection matrix
     Mtx_PerspTilt(&projection_matrix, C3D_AngleFromDegrees(80.0f), C3D_AspectRatioTop, 0.01f, 1000.0f, left_hand);
 
-    // Configure the first fragment shading substage to blend the texture color with
-    // the vertex color (calculated by the vertex shader using a lighting algorithm)
-    // See https://www.opengl.org/sdk/docs/man2/xhtml/glTexEnv.xml for more insight
     C3D_TexEnv* env = C3D_GetTexEnv(0);
     C3D_TexEnvInit(env);
-    C3D_TexEnvSrc(env, C3D_Both, GPU_TEXTURE0, GPU_PRIMARY_COLOR);
-    C3D_TexEnvFunc(env, C3D_Both, GPU_MODULATE);
+    C3D_TexEnvSrc(env, C3D_Both, GPU_TEXTURE0);
+    C3D_TexEnvFunc(env, C3D_Both, GPU_REPLACE);
 
     // This should probably move to each Model if it's not costly
     /*static const C3D_Material material = {
