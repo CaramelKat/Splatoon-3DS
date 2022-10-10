@@ -9,6 +9,7 @@
 #include <span>
 #include <citro3d.h>
 #include "Gfx.h"
+#include "vector.h"
 
 class Model {
 public:
@@ -23,8 +24,6 @@ private:
     using index_type = unsigned short;
     std::span<index_type> indexes;
 
-    using vec2 = struct { float x; float y; };
-    using vec3 = struct { float x; float y; float z; };
     using vertex_type = struct { vec3 position; vec2 uv; vec3 normal; };
     std::span<vertex_type> vertexes;
 
