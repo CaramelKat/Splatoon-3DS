@@ -41,10 +41,10 @@ int main()
 
 	// Initialize the scene
 	Gfx::State gfx;
-    gfx.t.camera_position = FVec3_New(0.0f, 5.0f, -0.5f);
+    gfx.t.camera_position = FVec3_New(0.0f, 2.0f, -0.5f);
 
     Model donut("donut.3mdl");
-    donut.world_position = FVec3_New(0.0f, 0.0f, 2.0f);
+    donut.world_position = FVec3_New(0.0f, 0.0f, 1.0f);
     gfx.t.camera_target = donut.world_position;
 	// Main loop
 	while (aptMainLoop())

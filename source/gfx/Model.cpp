@@ -57,7 +57,7 @@ void Model::Draw(Gfx::State& gfx) {
     Mtx_Translate(&model_matrix, world_position.x, world_position.y, world_position.z, false);
     //Mtx_RotateX(&model_matrix, angleX, true);
     //Mtx_RotateZ(&model_matrix, angleY, true);
-    Mtx_Multiply(&model_matrix, &model_matrix, &gfx.view_matrix);
+    Mtx_Multiply(&model_matrix, &gfx.view_matrix, &model_matrix);
 
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, gfx.uLoc_modelView, &model_matrix);
 
