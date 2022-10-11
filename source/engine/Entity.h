@@ -10,14 +10,7 @@
 
 #include "vector.h"
 #include "gfx/Model.h"
-
-enum EntityType : uint16_t {
-    ENTITY_TYPE_STATIC_PROP = 0,
-    ENTITY_TYPE_PHYSICS_PROP = 1,
-    ENTITY_TYPE_PLAYER = 1000,
-    ENTITY_TYPE_BOMB = 1001,
-    // etc.
-};
+#include "EntityType.h"
 
 class Entity {
 public:
