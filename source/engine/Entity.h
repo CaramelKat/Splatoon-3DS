@@ -6,6 +6,7 @@
 #define INC_SPLATOON_3DS_ENTITY_H
 
 #include <cstdint>
+#include <utility>
 
 #include "vector.h"
 #include "gfx/Model.h"
@@ -20,14 +21,16 @@ enum EntityType : uint16_t {
 
 class Entity {
 public:
-    Entity(Model& model) : m_model(model) {}
+    Entity(Model& model, std::string name) : name(std::move(name)), m_model(model) {}
+    virtual ~Entity() = 0; //did I stutter?
 
     const std::string name;
     EntityType type;
 
     // todo pass in m_world_position, maybe texture
     void Draw(Gfx::State& gfx) { m_model.Draw(gfx); }
-private:
+
+protected:
     Model& m_model;
     vec3 m_world_position {0, 0, 0};
 };

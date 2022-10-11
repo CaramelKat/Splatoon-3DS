@@ -7,13 +7,16 @@
 
 #include <list>
 #include <string>
+#include <memory>
 #include "Entity.h"
 #include "gfx/Model.h"
 
 class Map {
     Map(const std::string& path);
+
+    bool valid = false;
 private:
-    std::list<Entity> m_entities;
+    std::list<std::shared_ptr<Entity>> m_entities;
     std::list<Model> m_models;
     // yet unknown "floor geometry" type
 };
