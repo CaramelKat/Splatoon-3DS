@@ -2,8 +2,8 @@
 // Created by ash on 10/11/22.
 //
 
-#ifndef INC_3DS_GFX_ENTITY_H
-#define INC_3DS_GFX_ENTITY_H
+#ifndef INC_SPLATOON_3DS_ENTITY_H
+#define INC_SPLATOON_3DS_ENTITY_H
 
 #include <cstdint>
 
@@ -32,4 +32,4 @@ private:
     vec3 m_world_position {0, 0, 0};
 };
 
-#endif //INC_3DS_GFX_ENTITY_H
+#endif //INC_SPLATOON_3DS_ENTITY_H

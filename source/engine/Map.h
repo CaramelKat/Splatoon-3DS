@@ -2,8 +2,8 @@
 // Created by ash on 10/11/22.
 //
 
-#ifndef INC_3DS_GFX_MAP_H
-#define INC_3DS_GFX_MAP_H
+#ifndef INC_SPLATOON_3DS_MAP_H
+#define INC_SPLATOON_3DS_MAP_H
 
 #include <list>
 #include <string>
@@ -18,4 +18,4 @@ private:
     // yet unknown "floor geometry" type
 };
 
-#endif //INC_3DS_GFX_MAP_H
+#endif //INC_SPLATOON_3DS_MAP_H

@@ -2,8 +2,8 @@
 // Created by ash on 9/15/22.
 //
 
-#ifndef INC_3DS_GFX_MODEL_H
-#define INC_3DS_GFX_MODEL_H
+#ifndef INC_SPLATOON_3DS_MODEL_H
+#define INC_SPLATOON_3DS_MODEL_H
 
 #include <string>
 #include <span>
@@ -30,4 +30,4 @@ private:
     C3D_Tex texture;
 };
 
-#endif //INC_3DS_GFX_MODEL_H
+#endif //INC_SPLATOON_3DS_MODEL_H

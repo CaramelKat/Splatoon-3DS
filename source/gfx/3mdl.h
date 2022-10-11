@@ -2,8 +2,8 @@
 // Created by ash on 9/16/22.
 //
 
-#ifndef INC_3DS_GFX_3MDL_H
-#define INC_3DS_GFX_3MDL_H
+#ifndef INC_SPLATOON_3DS_3MDL_H
+#define INC_SPLATOON_3DS_3MDL_H
 
 #include <cstdint>
 
@@ -18,4 +18,4 @@ typedef struct {
     uint32_t vertexes_sz;
 } MDL_Header;
 
-#endif //INC_3DS_GFX_3MDL_H
+#endif //INC_SPLATOON_3DS_3MDL_H

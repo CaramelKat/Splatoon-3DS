@@ -2,8 +2,8 @@
 // Created by ash on 9/16/22.
 //
 
-#ifndef INC_3DS_GFX_UTIL_H
-#define INC_3DS_GFX_UTIL_H
+#ifndef INC_SPLATOON_3DS_UTIL_H
+#define INC_SPLATOON_3DS_UTIL_H
 
 #include <cstring>
 #include <3ds/svc.h>
@@ -14,4 +14,4 @@
     svcOutputDebugString(_msgbuf, (_sz > sizeof(_msgbuf) ? sizeof(_msgbuf) : _sz)); \
 }
 
-#endif //INC_3DS_GFX_UTIL_H
+#endif //INC_SPLATOON_3DS_UTIL_H
