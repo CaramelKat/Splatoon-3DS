@@ -4,8 +4,9 @@ old/
 *.elf
 *.3dsx
 *.smdh
-a.out
+*.o
 
-# models
+# models/
 *.blend*
 *.3mdl
+obj_convert
