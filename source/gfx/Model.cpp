@@ -49,7 +49,7 @@ Model::Model(const std::string& path) {
     valid = true;
 }
 
-void Model::Draw(Gfx::State& gfx) {
+void Model::Draw(Gfx::State& gfx, vec3 world_position) {
     if (!valid) return;
 
     C3D_Mtx model_matrix;

@@ -22,13 +22,13 @@ enum EntityType : uint16_t {
 class Entity {
 public:
     Entity(Model& model, std::string name) : name(std::move(name)), m_model(model) {}
-    virtual ~Entity() = 0; //did I stutter?
+    virtual ~Entity() = default;
 
     const std::string name;
     EntityType type;
 
     // todo pass in m_world_position, maybe texture
-    void Draw(Gfx::State& gfx) { m_model.Draw(gfx); }
+    void Draw(Gfx::State& gfx) { m_model.Draw(gfx, m_world_position); }
 
 protected:
     Model& m_model;

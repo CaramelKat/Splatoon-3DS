@@ -10,3 +10,7 @@ old/
 *.blend*
 *.3mdl
 obj_convert
+
+# maps/
+*.3map
+map_assembler

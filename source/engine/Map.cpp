@@ -10,18 +10,18 @@
 #include <string>
 
 struct FileHeader {
-    int models_count;
+    uint32_t models_count;
 };
 // Idea is for each one of these to correspond to one *model load*
 // Since we might use the same model many times
 struct FileModel {
-    int entity_count;
-    int entities_len;
+    uint32_t entity_count;
+    uint32_t entities_len;
     char name[16];
 };
 struct FileEntity {
     EntityType type;
-    size_t attribs_length;
+    uint32_t attribs_length;
     std::byte attribs_value[];
 };
 
@@ -40,14 +40,14 @@ Map::Map(const std::string &path) {
     if (!ReadVector(f_models, fd)) return;
 
     for (auto& f_model : f_models) {
-        auto& model = m_models.emplace_back(std::string("models/") + f_model.name + ".3dml");
+        auto& model = m_models.emplace_back(std::string("models/") + f_model.name + ".3mdl");
         if (!model.valid) continue;
 
         std::vector<std::byte> f_entities(f_model.entities_len);
         if (!ReadVector(f_entities, fd)) return;
 
         size_t tlv_offset = 0;
-        for (int i = 0; i < f_model.entity_count; i++) {
+        for (uint i = 0; i < f_model.entity_count; i++) {
             auto* f_entity = reinterpret_cast<FileEntity*>(&f_entities.at(tlv_offset)); // UB goes here
             std::span<std::byte> attribs {f_entity->attribs_value, f_entity->attribs_length };
 
@@ -58,6 +58,7 @@ Map::Map(const std::string &path) {
                     m_entities.push_back(make_shared<EntStaticProp>(
                         model, f_model.name, attribs.subspan<0, 12>()
                     ));
+                    break;
                 }
                 default: {
                     // likely bug in tlv offset, bail

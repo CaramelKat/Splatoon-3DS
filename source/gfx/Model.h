@@ -16,10 +16,9 @@ public:
     explicit Model(const std::string& path);
     ~Model();
 
-    void Draw(Gfx::State& gfx);
+    void Draw(Gfx::State& gfx, vec3 world_position);
 
     bool valid = false;
-    C3D_FVec world_position;
 private:
     using index_type = unsigned short;
     std::span<index_type> indexes;

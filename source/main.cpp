@@ -6,6 +6,7 @@
 #include <cstdio>
 #include "gfx/Model.h"
 #include "gfx/Gfx.h"
+#include "engine/Map.h"
 #include "util.h"
 
 #define CLEAR_COLOR 0x68B0D8FF
@@ -15,7 +16,7 @@
 	GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGBA8) | GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB8) | \
 	GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO))
 
-static void sceneRender(Gfx::State& gfx, Model& m)
+static void sceneRender(Gfx::State& gfx, Map& m)
 {
     gfx.Update();
 
@@ -43,9 +44,13 @@ int main()
 	Gfx::State gfx;
     gfx.t.camera_position = FVec3_New(0.0f, 2.0f, -0.5f);
 
-    Model donut("donut.3mdl");
-    donut.world_position = FVec3_New(0.0f, 0.0f, 1.0f);
-    gfx.t.camera_target = donut.world_position;
+    /*Model donut("donut.3mdl");
+    donut.world_position = ;*/
+    gfx.t.camera_target = FVec3_New(0.0f, 0.0f, 1.0f);
+    Map level("test_room.3map");
+    if (!level.valid) {
+        LOG("level load failed!");
+    }
 	// Main loop
 	while (aptMainLoop())
 	{
@@ -66,7 +71,7 @@ int main()
 		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
 			C3D_RenderTargetClear(target, C3D_CLEAR_ALL, CLEAR_COLOR, 0);
 			C3D_FrameDrawOn(target);
-			sceneRender(gfx, donut);
+			sceneRender(gfx, level);
 		C3D_FrameEnd(0);
 	}
 

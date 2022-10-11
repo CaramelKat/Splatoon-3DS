@@ -12,9 +12,17 @@
 #include "gfx/Model.h"
 
 class Map {
+public:
     Map(const std::string& path);
 
     bool valid = false;
+
+    void Draw(Gfx::State& gfx) {
+        for (const auto& ent : m_entities) {
+            ent->Draw(gfx);
+        }
+    }
+
 private:
     std::list<std::shared_ptr<Entity>> m_entities;
     std::list<Model> m_models;
