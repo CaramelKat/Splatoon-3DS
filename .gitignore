@@ -6,5 +6,6 @@ old/
 *.smdh
 a.out
 
-# ash: Remove this later!
-models/
+# models
+*.blend*
+*.3mdl
