@@ -10,7 +10,7 @@ Thus we need to preprocess the models to get all the vertexes split up and re-op
 Thus: 3mdl. It's not really a real format yet, just whatever is closest to the internal representation the Splatoon 3DS engine is using at this stage in development. It has changed often and it will change again. I have no idea how animations will work.
 
 ## Usage
-In Blender, make your cool thing. Don't bother setting material properties, the engine doesn't support them (yet?). Do bother smoothing the normals. File->Export->Wavefront (.obj), select only UV Coordinates, Normals, and Materials in the Geometry panel. You'll get a .mtl and .obj file like the ones in this folder.
+In Blender, make your cool thing. Don't bother setting material properties, the engine doesn't support them (yet?). Do bother smoothing the normals. File->Export->Wavefront (.obj), select only UV Coordinates and Normals in the Geometry panel. You'll get a .mtl and .obj file like the ones in this folder.
 
 Run `make`. It'll create tools/obj_convert for you, and also convert all the models in this folder. If you want to manually convert a model, it's `./obj_convert gaming.obj gaming.3mdl`.
 

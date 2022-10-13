@@ -70,7 +70,7 @@ void Model::Draw(Gfx::State& gfx, vec3 world_position) {
     // Configure buffers
     C3D_BufInfo* bufInfo = C3D_GetBufInfo();
     BufInfo_Init(bufInfo);
-    BufInfo_Add(bufInfo, vertexes.data(), sizeof(vertexes[0]), 1, 0x210);
+    BufInfo_Add(bufInfo, vertexes.data(), sizeof(vertexes[0]), 3, 0x210);
 
     // Bind texture
     C3D_TexBind(0, &texture);

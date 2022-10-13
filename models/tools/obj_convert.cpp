@@ -25,7 +25,7 @@ bool is_near(float v1, float v2){
 // Similar = same position + same UVs + same normal
 bool getSimilarVertexIndex(
     const vec3 & in_vertex,
-    vec2 & in_uv,
+    const vec2 & in_uv,
     const vec3 & in_normal,
     std::vector<vertex> & out_vertices,
     unsigned short & result
@@ -53,7 +53,7 @@ bool getSimilarVertexIndex(
 
 void indexVBO_slow(
     const std::vector<vec3> & in_vertices,
-    std::vector<vec2> & in_uvs,
+    const std::vector<vec2> & in_uvs,
     const std::vector<vec3> & in_normals,
 
     std::vector<unsigned short> & out_indices,

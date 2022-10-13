@@ -20,9 +20,6 @@ static void sceneRender(Gfx::State& gfx, Map& m)
 {
     gfx.Update();
 
-    /*C3D_FVec lightPos = FVec4_New(0.0f, 0.0f, -0.5f, 1.0f);
-    C3D_LightPosition(&gfx.light, &lightPos);*/
-
 	// Update the uniforms
 	C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, gfx.uLoc_projection, &gfx.projection_matrix);
 
@@ -42,15 +39,14 @@ int main()
 
 	// Initialize the scene
 	Gfx::State gfx;
-    gfx.t.camera_position = FVec3_New(0.0f, 2.0f, -0.5f);
+    gfx.t.camera_position = FVec3_New(0.0f, 0.0f, 4.0f);
+    gfx.t.camera_target = FVec3_New(0.0f, 0.0f, 0.0f);
 
-    /*Model donut("donut.3mdl");
-    donut.world_position = ;*/
-    gfx.t.camera_target = FVec3_New(0.0f, 0.0f, 1.0f);
     Map level("test_room.3map");
     if (!level.valid) {
         LOG("level load failed!");
     }
+
 	// Main loop
 	while (aptMainLoop())
 	{
