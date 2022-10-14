@@ -6,6 +6,11 @@ ifeq ($(strip $(DEVKITARM)),)
 $(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
 endif
 
+# BEFORE we include the devkitPro stuff
+# for tools
+export CCHOST := $(CC)
+export CXXHOST := $(CXX)
+
 TOPDIR ?= $(CURDIR)
 include $(DEVKITARM)/3ds_rules
 
@@ -38,7 +43,7 @@ DATA		:=	data
 INCLUDES	:=	include source
 GRAPHICS	:=	gfx
 GFXBUILD	:=	$(BUILD)
-#ROMFS		:=	romfs
+ROMFS		:=	romfs
 #GFXBUILD	:=	$(ROMFS)/gfx
 
 #---------------------------------------------------------------------------------
@@ -156,12 +161,13 @@ endif
 
 ifneq ($(ROMFS),)
 	export _3DSXFLAGS += --romfs=$(CURDIR)/$(ROMFS)
+	_3DSXDEPS += $(CURDIR)/$(ROMFS)/*
 endif
 
-.PHONY: all clean
+.PHONY: all clean models maps romfs
 
 #---------------------------------------------------------------------------------
-all: $(BUILD) $(GFXBUILD) $(DEPSDIR) $(ROMFS_T3XFILES) $(T3XHFILES)
+all: $(BUILD) $(GFXBUILD) $(DEPSDIR) $(ROMFS_T3XFILES) $(T3XHFILES) romfs
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 $(BUILD):
@@ -178,9 +184,23 @@ $(DEPSDIR):
 endif
 
 #---------------------------------------------------------------------------------
+models:
+	@$(MAKE) -C models
+
+maps:
+	@$(MAKE) -C maps
+
+romfs: models maps
+	@mkdir -p romfs/models
+	@cp models/*.3mdl romfs/models/
+	@cp maps/*.3map romfs/
+
+#---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
 	@rm -fr $(BUILD)/* $(TARGET).3dsx $(OUTPUT).smdh $(TARGET).elf $(GFXBUILD)/*
+	@$(MAKE) -C models clean
+	@$(MAKE) -C maps clean
 
 #---------------------------------------------------------------------------------
 $(GFXBUILD)/%.t3x	$(BUILD)/%.h	:	%.t3s

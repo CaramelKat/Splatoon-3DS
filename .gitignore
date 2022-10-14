@@ -1,6 +1,7 @@
 .idea/
 build/
 old/
+romfs/
 *.elf
 *.3dsx
 *.smdh

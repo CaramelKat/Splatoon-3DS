@@ -1,7 +1,10 @@
 # TODO: windows support
 
+CXXHOST ?= $(CXX)
+CXX := $(CXXHOST)
+
 map_assembler: map_assembler.o
-	$(CXX) $(LDFLAGS) $? -o $@
+	$(CXXHOST) $(LDFLAGS) $? -o $@
 
 .PHONY: clean
 clean:

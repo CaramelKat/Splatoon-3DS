@@ -1,7 +1,10 @@
 # TODO: windows support
 
+CXXHOST ?= $(CXX)
+CXX := $(CXXHOST)
+
 obj_convert: obj_convert.o
-	$(CXX) $(LDFLAGS) $? -o $@
+	$(CXXHOST) $(LDFLAGS) $? -o $@
 
 .PHONY: clean
 clean:

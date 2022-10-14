@@ -29,6 +29,9 @@ static void sceneRender(Gfx::State& gfx, Map& m)
 
 int main()
 {
+    // Init romfs
+    romfsInit();
+
     // Initialize graphics
     gfxInitDefault();
     C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
@@ -42,7 +45,7 @@ int main()
     gfx.t.camera_position = FVec3_New(0.0f, 0.0f, 4.0f);
     gfx.t.camera_target = FVec3_New(0.0f, 0.0f, 0.0f);
 
-    Map level("test_room.3map");
+    Map level("romfs:/test_room.3map");
     if (!level.valid) {
         LOG("level load failed!");
     }
@@ -74,5 +77,6 @@ int main()
     // Deinitialize graphics
     C3D_Fini();
     gfxExit();
+    romfsExit();
     return 0;
 }

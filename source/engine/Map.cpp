@@ -25,7 +25,7 @@ Map::Map(const std::string &path) {
     if (!ReadVector(f_models, fd)) return;
 
     for (auto& f_model : f_models) {
-        auto& model = m_models.emplace_back(std::string("models/") + f_model.name + ".3mdl");
+        auto& model = m_models.emplace_back(std::string("romfs:/models/") + f_model.name + ".3mdl");
         if (!model.valid) continue;
 
         std::vector<std::byte> f_entities(f_model.entities_len);
