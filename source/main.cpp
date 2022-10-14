@@ -34,6 +34,7 @@ int main()
 
     // Initialize graphics
     gfxInitDefault();
+    consoleInit(GFX_BOTTOM, NULL);
     C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
     LOGF("hello world %d\n", 1);
     // Initialize the render target
@@ -65,6 +66,10 @@ int main()
 
         if (kDown & KEY_DOWN)
             gfx.t.camera_position.y -= 0.5f;
+
+        printf("\x1b[29;1Hgpu: %5.2f%%  cpu: %5.2f%%  buf:%5.2f%%\n",
+               C3D_GetDrawingTime()*3, C3D_GetProcessingTime()*3, C3D_GetCmdBufUsage()*100
+        );
 
         // Render the scene
         C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
