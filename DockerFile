@@ -2,4 +2,7 @@ FROM devkitpro/devkitarm
 
 WORKDIR /Splatoon3DS
 
+RUN apt-get update && \
+    apt-get -y install g++
+
 CMD rm -rf build && make -f Makefile

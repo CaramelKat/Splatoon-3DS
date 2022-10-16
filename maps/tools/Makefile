@@ -2,9 +2,10 @@
 
 CXXHOST ?= $(CXX)
 CXX := $(CXXHOST)
+CXXFLAGS += -std=c++17
 
 map_assembler: map_assembler.o
-	$(CXXHOST) $(LDFLAGS) $? -o $@
+	$(CXXHOST) $(LDFLAGS) $(CXXFLAGS) $? -o $@
 
 .PHONY: clean
 clean:
