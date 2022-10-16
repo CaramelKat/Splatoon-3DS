@@ -101,7 +101,7 @@ int main(int argc, char** argv) {
         fm.entities_len = 0;
         strncpy(fm.name, name.c_str(), sizeof(fm.name)-1);
         for (auto& ent : entities) {
-            fm.entities_len += offsetof(decltype(*ent), attribs_value) + ent->attribs_length;
+            fm.entities_len += offsetof(typeof(*ent), attribs_value) + ent->attribs_length;
         }
         f_models.push_back(fm);
     }
@@ -116,7 +116,7 @@ int main(int argc, char** argv) {
     fwrite(f_models.data(), sizeof(f_models[0]), f_models.size(), outp);
     for (auto& [name, entities] : models) {
         for (auto& ent : entities) {
-            fwrite(ent.get(), offsetof(decltype(*ent), attribs_value) + ent->attribs_length, 1, outp);
+            fwrite(ent.get(), offsetof(typeof(*ent), attribs_value) + ent->attribs_length, 1, outp);
         }
     }
 

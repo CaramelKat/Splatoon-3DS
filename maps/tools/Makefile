@@ -2,7 +2,7 @@
 
 CXXHOST ?= $(CXX)
 CXX := $(CXXHOST)
-CXXFLAGS += -std=c++17
+CXXFLAGS += -std=gnu++17
 
 map_assembler: map_assembler.o
 	$(CXXHOST) $(LDFLAGS) $(CXXFLAGS) $? -o $@
