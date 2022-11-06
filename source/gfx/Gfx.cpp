@@ -58,6 +58,7 @@ Gfx::State::State() {
     C3D_LightPosition(&light, &light_vec);
 
     C3D_DepthTest(true, GPU_GEQUAL, GPU_WRITE_ALL);
+    C3D_CullFace(GPU_CULL_BACK_CCW);
     C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA);
 }
 
