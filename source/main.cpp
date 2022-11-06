@@ -43,7 +43,7 @@ int main()
 
     // Initialize the scene
     Gfx::State gfx;
-    gfx.t.camera_position = FVec3_New(0.0f, 0.0f, 4.0f);
+    gfx.t.camera_position = FVec3_New(0.0f, 2.0f, 4.0f);
     gfx.t.camera_target = FVec3_New(0.0f, 0.0f, 0.0f);
 
     Map level("romfs:/test_room.3map");
