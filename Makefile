@@ -12,6 +12,7 @@ export CCHOST := $(CC)
 export CXXHOST := $(CXX)
 
 TOPDIR ?= $(CURDIR)
+IPADDRESS = "192.168.1.110"
 include $(DEVKITARM)/3ds_rules
 
 #---------------------------------------------------------------------------------
@@ -167,8 +168,10 @@ endif
 .PHONY: all clean models maps romfs
 
 #---------------------------------------------------------------------------------
+
 all: $(BUILD) $(GFXBUILD) $(DEPSDIR) $(ROMFS_T3XFILES) $(T3XHFILES) romfs
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
+	@3dslink $(TARGET).3dsx --address $(IPADDRESS)
 
 $(BUILD):
 	@mkdir -p $@
