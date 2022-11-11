@@ -32,9 +32,9 @@ Gfx::State::State() {
 
     // This should probably move to each Model if it's not costly
     static const C3D_Material material = {
-        { 0.2f, 0.2f, 0.2f }, //ambient
+        { 0.4f, 0.4f, 0.4f }, //ambient
         { 0.4f, 0.4f, 0.4f }, //diffuse
-        { 0.8f, 0.8f, 0.8f }, //specular0
+        { 0.6f, 0.6f, 0.6f }, //specular0
         { 0.0f, 0.0f, 0.0f }, //specular1
         { 0.0f, 0.0f, 0.0f }, //emission
     };
@@ -53,7 +53,7 @@ Gfx::State::State() {
     C3D_LightEnvFresnel(&light_env, GPU_PRI_SEC_ALPHA_FRESNEL);
 
     C3D_LightInit(&light, &light_env);
-    C3D_LightColor(&light, 1.0f, 1.0f, 1.0f);
+    C3D_LightColor(&light, 2.0f, 2.0f, 2.0f);
     C3D_FVec light_vec = FVec4_New(0.0f, 0.0f, -0.5f, 1.0f);
     C3D_LightPosition(&light, &light_vec);
 
