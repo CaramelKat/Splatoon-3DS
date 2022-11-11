@@ -44,7 +44,7 @@ Model::Model(const std::string& path) {
 
     if (!loadTextureFromMem(&texture, NULL, concrete_t3x, concrete_t3x_size))
         svcBreak(USERBREAK_PANIC);
-    C3D_TexSetFilter(&texture, GPU_LINEAR, GPU_NEAREST);
+    C3D_TexSetFilter(&texture, GPU_NEAREST, GPU_NEAREST);
 
     valid = true;
 }
