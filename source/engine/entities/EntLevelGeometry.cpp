@@ -19,9 +19,12 @@ EntLevelGeometry::EntLevelGeometry(Model &model, std::string name) :
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<float> distribution(0.2f, 1.0f);
-    std::generate(colours.begin(), colours.end(), [&]{
-        return rgb::fromHsv(distribution(gen), 1.0f, 1.0f);
-    });
+
+    auto c = colours.begin();
+    while (c != colours.end()) {
+        auto colour = rgb::fromHsv(distribution(gen), 1.0f, 1.0f);
+        c = std::fill_n(c, 3, colour);
+    }
 }
 
 EntLevelGeometry::~EntLevelGeometry() {
