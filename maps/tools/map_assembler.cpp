@@ -17,6 +17,7 @@
 enum EntityType : uint16_t {
     ENTITY_TYPE_STATIC_PROP = 0,
     ENTITY_TYPE_PHYSICS_PROP = 1,
+    ENTITY_TYPE_LEVEL_GEOMETRY = 2,
     ENTITY_TYPE_PLAYER = 1000,
     ENTITY_TYPE_BOMB = 1001,
     // etc.
@@ -84,7 +85,14 @@ int main(int argc, char** argv) {
             entity->attribs_length = ent_size;
             memcpy(entity->attribs_value, &p, sizeof(p));
             models[model_name].push_back(entity);
-        } /* else if (strcmp(... */
+        } else if (strncmp(line, "lvgeo", 5) == 0) {
+            char type[8], model_name[16];
+            sscanf(line, "%7s %15s", type, model_name);
+            auto entity = FileEntity::make_var(0);
+            entity->type = ENTITY_TYPE_LEVEL_GEOMETRY;
+            entity->attribs_length = 0;
+            models[model_name].push_back(entity);
+        }
     }
 
     fclose(inp);

@@ -16,7 +16,13 @@ public:
     explicit Model(const std::string& path);
     ~Model();
 
-    void Draw(Gfx::State& gfx, vec3 world_position);
+    using colour_type = vec3;
+    void Draw(Gfx::State& gfx, vec3 world_position, std::span<colour_type> colours);
+
+    //there needs to be some better API here, we'll eventually want access to the vertexes for mesh collision
+    unsigned int VertexCount() const {
+        return vertexes.size();
+    }
 
     bool valid = false;
 private:
@@ -25,6 +31,8 @@ private:
 
     using vertex_type = struct { vec3 position; vec2 uv; vec3 normal; };
     std::span<vertex_type> vertexes;
+
+    colour_type colour = { 1.0f, 1.0f, 1.0f };
 
     C3D_Tex texture;
 };

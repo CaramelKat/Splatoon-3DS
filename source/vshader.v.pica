@@ -20,6 +20,7 @@
 .alias inpos v0
 .alias intex v1
 .alias innrm v2
+.alias inclr v3
 
 .proc main
 	; Force the w component of inpos to be 1.0
@@ -66,7 +67,7 @@
 
 degenerate:
 	mov outnq, r0
-	mov outclr, ones
+	mov outclr, inclr
 
 	; We're finished
 	end

@@ -21,11 +21,12 @@ public:
     EntityType type;
 
     // todo pass in m_world_position, maybe texture
-    void Draw(Gfx::State& gfx) { m_model.Draw(gfx, m_world_position); }
+    void Draw(Gfx::State& gfx) { m_model.Draw(gfx, m_world_position, colours); }
 
 protected:
     Model& m_model;
     vec3 m_world_position {0, 0, 0};
+    std::span<Model::colour_type> colours {};
 };
 
 #endif //INC_SPLATOON_3DS_ENTITY_H

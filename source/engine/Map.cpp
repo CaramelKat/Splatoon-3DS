@@ -4,6 +4,7 @@
 #include "Map.h"
 
 #include "entities/EntStaticProp.h"
+#include "entities/EntLevelGeometry.h"
 #include "util.h"
 #include "3map.h"
 
@@ -40,8 +41,15 @@ Map::Map(const std::string &path) {
             switch (f_entity->type) {
                 case ENTITY_TYPE_STATIC_PROP: {
                     if (attribs.size_bytes() != 12) return; // corrupt, bail
-                    m_entities.push_back(make_shared<EntStaticProp>(
+                    m_entities.push_back(std::make_shared<EntStaticProp>(
                         model, f_model.name, attribs.subspan<0, 12>()
+                    ));
+                    break;
+                }
+                case ENTITY_TYPE_LEVEL_GEOMETRY: {
+                    if (attribs.size_bytes() != 0) return;
+                    m_entities.push_back(std::make_shared<EntLevelGeometry>(
+                        model, f_model.name
                     ));
                     break;
                 }

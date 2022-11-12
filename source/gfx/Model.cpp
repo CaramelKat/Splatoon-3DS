@@ -49,7 +49,7 @@ Model::Model(const std::string& path) {
     valid = true;
 }
 
-void Model::Draw(Gfx::State& gfx, vec3 world_position) {
+void Model::Draw(Gfx::State& gfx, vec3 world_position, std::span<colour_type> colours) {
     if (!valid) return;
 
     C3D_Mtx model_matrix;
@@ -66,11 +66,20 @@ void Model::Draw(Gfx::State& gfx, vec3 world_position) {
     AttrInfo_AddLoader(attrInfo, 0, GPU_FLOAT, 3); // v0=position
     AttrInfo_AddLoader(attrInfo, 1, GPU_FLOAT, 2); // v1=uv
     AttrInfo_AddLoader(attrInfo, 2, GPU_FLOAT, 3); // v2=normal
+    if (!colours.empty()) {
+        AttrInfo_AddLoader(attrInfo, 3, GPU_FLOAT, 3); // v3=colour
+    } else {
+        AttrInfo_AddFixed(attrInfo, 3);
+        C3D_FixedAttribSet(3, colour.x, colour.y, colour.z, 1.0f);
+    }
 
     // Configure buffers
     C3D_BufInfo* bufInfo = C3D_GetBufInfo();
     BufInfo_Init(bufInfo);
     BufInfo_Add(bufInfo, vertexes.data(), sizeof(vertexes[0]), 3, 0x210);
+    if (!colours.empty()) {
+        BufInfo_Add(bufInfo, colours.data(), sizeof(colours[0]), 1, 0x3);
+    }
 
     // Bind texture
     C3D_TexBind(0, &texture);
