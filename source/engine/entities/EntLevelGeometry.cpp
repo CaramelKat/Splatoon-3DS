@@ -5,6 +5,7 @@
 #include "EntLevelGeometry.h"
 #include <algorithm>
 #include <random>
+#include "colourspaces.h"
 
 EntLevelGeometry::EntLevelGeometry(Model &model, std::string name) :
     Entity(model, std::move(name)) {
@@ -19,7 +20,7 @@ EntLevelGeometry::EntLevelGeometry(Model &model, std::string name) :
     std::mt19937 gen(rd());
     std::uniform_real_distribution<float> distribution(0.2f, 1.0f);
     std::generate(colours.begin(), colours.end(), [&]{
-        return Model::colour_type { distribution(gen), distribution(gen), distribution(gen) };
+        return rgb::fromHsv(distribution(gen), 1.0f, 1.0f);
     });
 }
 

@@ -10,13 +10,14 @@
 #include <citro3d.h>
 #include "Gfx.h"
 #include "vector.h"
+#include "colourspaces.h"
 
 class Model {
 public:
     explicit Model(const std::string& path);
     ~Model();
 
-    using colour_type = vec3;
+    using colour_type = rgb;
     void Draw(Gfx::State& gfx, vec3 world_position, std::span<colour_type> colours);
 
     //there needs to be some better API here, we'll eventually want access to the vertexes for mesh collision

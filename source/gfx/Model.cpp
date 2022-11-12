@@ -70,7 +70,7 @@ void Model::Draw(Gfx::State& gfx, vec3 world_position, std::span<colour_type> co
         AttrInfo_AddLoader(attrInfo, 3, GPU_FLOAT, 3); // v3=colour
     } else {
         AttrInfo_AddFixed(attrInfo, 3);
-        C3D_FixedAttribSet(3, colour.x, colour.y, colour.z, 1.0f);
+        C3D_FixedAttribSet(3, colour.r, colour.g, colour.b, 1.0f);
     }
 
     // Configure buffers
