@@ -162,7 +162,9 @@ int main(int argc, char** argv) {
 
     printf("indexed: %ld\n", vertexes.size());
 
-    if (vertexes.size() < flat_vertexes.size()) {
+    std::string filename(argv[2]);
+
+    if (vertexes.size() < flat_vertexes.size() && filename.find("level") == std::string::npos) {
         printf("saving indexed\n");
         header.dtype = 1;
         header.indexes_sz = (uint32_t)indexes.size();
@@ -174,7 +176,7 @@ int main(int argc, char** argv) {
     } else {
         // well that was pointless, just write flattened
         printf("saving flat\n");
-        std::vector<vertex> flat_data(vertexes.size());
+        std::vector<vertex> flat_data(flat_vertexes.size());
         for (int i = 0; i < flat_data.size(); i++) {
             flat_data[i] = { flat_vertexes[i], flat_uvs[i], flat_normals[i] };
         }

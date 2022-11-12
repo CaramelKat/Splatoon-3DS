@@ -15,3 +15,5 @@ In Blender, make your cool thing. Don't bother setting material properties, the 
 Run `make`. It'll create tools/obj_convert for you, and also convert all the models in this folder. If you want to manually convert a model, it's `./obj_convert gaming.obj gaming.3mdl`.
 
 Results go on the root of the SD card for now, that'll move soon.
+
+NOTE: level geometry should be named `levelX.obj`. It won't get indexed so that the ink colouring can work properly.
