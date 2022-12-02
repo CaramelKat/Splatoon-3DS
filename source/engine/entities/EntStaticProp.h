@@ -8,11 +8,11 @@
 #include "engine/Entity.h"
 #include <span>
 
-
+#define ENT_STATIC_PROP_ATTRIBS_SZ 36
 
 class EntStaticProp : public Entity {
 public:
-    EntStaticProp(Model& model, std::string name, std::span<std::byte, 12> attribs);
+    EntStaticProp(Model& model, std::string name, std::span<std::byte, ENT_STATIC_PROP_ATTRIBS_SZ> attribs);
 };
 
 

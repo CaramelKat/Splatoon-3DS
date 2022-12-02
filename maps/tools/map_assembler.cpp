@@ -56,6 +56,12 @@ struct vec3 {
     float z;
 };
 
+struct EntStaticPropData {
+    vec3 position;
+    vec3 rotation;
+    vec3 scale;
+};
+
 int main(int argc, char** argv) {
     if (argc < 3) {
         printf("no\n");
@@ -76,14 +82,18 @@ int main(int argc, char** argv) {
     while ((nread = getline(&line, &len, inp)) != -1) {
         if (strncmp(line, "sp", 2) == 0) {
             char type[8], model_name[16];
-            vec3 p;
-            sscanf(line, "%7s %15s %f %f %f", type, model_name, &p.x, &p.y, &p.z);
+            EntStaticPropData attrib;
+            sscanf(line, "%7s %15s p %f %f %f r %f %f %f s %f %f %f",
+                   type, model_name,
+                   &attrib.position.x, &attrib.position.y, &attrib.position.z,
+                   &attrib.rotation.x, &attrib.rotation.y, &attrib.rotation.z,
+                   &attrib.scale.x, &attrib.scale.y, &attrib.scale.z);
 
-            auto ent_size = sizeof(p);
+            auto ent_size = sizeof(attrib);
             auto entity = FileEntity::make_var(ent_size);
             entity->type = ENTITY_TYPE_STATIC_PROP;
             entity->attribs_length = ent_size;
-            memcpy(entity->attribs_value, &p, sizeof(p));
+            memcpy(entity->attribs_value, &attrib, sizeof(attrib));
             models[model_name].push_back(entity);
         } else if (strncmp(line, "lvgeo", 5) == 0) {
             char type[8], model_name[16];

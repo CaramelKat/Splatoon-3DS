@@ -1,2 +1,2 @@
 lvgeo level0
-sp donut -2.0 0.5 2.0
+sp donut p -2.0 0.5 2.0 r 0.0 0.0 0.0 s 1.0 1.0 1.0

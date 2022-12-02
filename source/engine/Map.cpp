@@ -40,9 +40,9 @@ Map::Map(const std::string &path) {
             // MAKE SURE to check attribs.size before calling subspan!
             switch (f_entity->type) {
                 case ENTITY_TYPE_STATIC_PROP: {
-                    if (attribs.size_bytes() != 12) return; // corrupt, bail
+                    if (attribs.size_bytes() != ENT_STATIC_PROP_ATTRIBS_SZ) return; // corrupt, bail
                     m_entities.push_back(std::make_shared<EntStaticProp>(
-                        model, f_model.name, attribs.subspan<0, 12>()
+                        model, f_model.name, attribs.subspan<0, ENT_STATIC_PROP_ATTRIBS_SZ>()
                     ));
                     break;
                 }

@@ -5,8 +5,17 @@
 #include "EntStaticProp.h"
 #include "util.h"
 
-EntStaticProp::EntStaticProp(Model &model, std::string name, std::span<std::byte, 12> attribs) :
+struct EntStaticPropData {
+    vec3 position;
+    vec3 rotation;
+    vec3 scale;
+};
+
+EntStaticProp::EntStaticProp(Model &model, std::string name, std::span<std::byte, ENT_STATIC_PROP_ATTRIBS_SZ> attribs) :
     Entity(model, std::move(name)) {
 
-    m_world_position = FromBytes<vec3>(attribs.subspan<0, 12>());
+    auto attrib = FromBytes<EntStaticPropData>(attribs.subspan<0, ENT_STATIC_PROP_ATTRIBS_SZ>());
+    m_world_position = attrib.position;
+    m_world_rotation = attrib.rotation;
+    m_world_scale = attrib.scale;
 }

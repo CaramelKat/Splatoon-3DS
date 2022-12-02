@@ -49,16 +49,10 @@ Model::Model(const std::string& path) {
     valid = true;
 }
 
-void Model::Draw(Gfx::State& gfx, vec3 world_position, std::span<colour_type> colours) {
+void Model::Draw(Gfx::State& gfx, C3D_Mtx model_matrix, std::span<colour_type> colours) {
     if (!valid) return;
 
-    C3D_Mtx model_matrix;
-    Mtx_Identity(&model_matrix);
-    Mtx_Translate(&model_matrix, world_position.x, world_position.y, world_position.z, false);
-    //Mtx_RotateX(&model_matrix, angleX, true);
-    //Mtx_RotateZ(&model_matrix, angleY, true);
     Mtx_Multiply(&model_matrix, &gfx.view_matrix, &model_matrix);
-
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, gfx.uLoc_modelView, &model_matrix);
 
     C3D_AttrInfo* attrInfo = C3D_GetAttrInfo();
