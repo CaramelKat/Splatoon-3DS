@@ -58,8 +58,7 @@ Gfx::State::State() {
 
     C3D_LightInit(&light, &light_env);
     C3D_LightColor(&light, 2.0f, 2.0f, 2.0f);
-    C3D_FVec light_vec = FVec4_New(0.0f, 0.0f, -0.5f, 1.0f);
-    C3D_LightPosition(&light, &light_vec);
+
 
     C3D_DepthTest(true, GPU_GEQUAL, GPU_WRITE_ALL);
     C3D_CullFace(GPU_CULL_BACK_CCW);

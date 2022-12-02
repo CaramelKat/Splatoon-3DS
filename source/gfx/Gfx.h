@@ -17,11 +17,16 @@ namespace Gfx {
         ~State();
         void Update() {
             Mtx_LookAt(&view_matrix, t.camera_position, t.camera_target, Up, left_hand);
+
+            C3D_FVec light_vec = Mtx_MultiplyFVec4(&view_matrix, t.light_pos);
+            C3D_LightPosition(&light, &light_vec);
         }
 
         struct {
             C3D_FVec camera_position;
             C3D_FVec camera_target;
+
+            C3D_FVec light_pos;
         } t;
 
         // Matrices

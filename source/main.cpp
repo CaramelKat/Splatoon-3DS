@@ -45,6 +45,7 @@ int main()
     Gfx::State gfx;
     gfx.t.camera_position = FVec3_New(0.0f, 2.0f, 4.0f);
     gfx.t.camera_target = FVec3_New(0.0f, 0.0f, 0.0f);
+    gfx.t.light_pos = FVec4_New(0.0f, 0.5f, 0.0f, 1.0f);
 
     Map level("romfs:/test_room.3map");
     if (!level.valid) {
