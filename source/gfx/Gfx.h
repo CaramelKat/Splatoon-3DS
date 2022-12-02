@@ -43,6 +43,7 @@ namespace Gfx {
         C3D_Light light;
         C3D_LightLut lut_phong;
         C3D_LightLut lut_fresnel;
+        C3D_LightLut lut_toon;
     };
 
 };
