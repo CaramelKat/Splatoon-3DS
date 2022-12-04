@@ -62,6 +62,10 @@ struct EntStaticPropData {
     vec3 scale;
 };
 
+constexpr float radians(float degrees) {
+    return 3.14159f * degrees / 180.0f;
+}
+
 int main(int argc, char** argv) {
     if (argc < 3) {
         printf("no\n");
@@ -88,6 +92,10 @@ int main(int argc, char** argv) {
                    &attrib.position.x, &attrib.position.y, &attrib.position.z,
                    &attrib.rotation.x, &attrib.rotation.y, &attrib.rotation.z,
                    &attrib.scale.x, &attrib.scale.y, &attrib.scale.z);
+
+            attrib.rotation.x = radians(attrib.rotation.x);
+            attrib.rotation.y = radians(attrib.rotation.y);
+            attrib.rotation.z = radians(attrib.rotation.z);
 
             auto ent_size = sizeof(attrib);
             auto entity = FileEntity::make_var(ent_size);

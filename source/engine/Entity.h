@@ -24,10 +24,10 @@ public:
     void Draw(Gfx::State& gfx) {
         C3D_Mtx model_matrix;
         Mtx_Identity(&model_matrix);
-        Mtx_Translate(&model_matrix, m_world_position.x, m_world_position.y, m_world_position.z, false);
         Mtx_RotateX(&model_matrix, m_world_rotation.x, false);
         Mtx_RotateY(&model_matrix, m_world_rotation.y, false);
         Mtx_RotateZ(&model_matrix, m_world_rotation.z, false);
+        Mtx_Translate(&model_matrix, m_world_position.x, m_world_position.y, m_world_position.z, false);
         Mtx_Scale(&model_matrix, m_world_scale.x, m_world_scale.y, m_world_scale.z);
         m_model.Draw(gfx, model_matrix, colours);
     }
