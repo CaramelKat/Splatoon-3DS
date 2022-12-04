@@ -47,7 +47,7 @@ int main()
     gfx.t.camera_target = FVec3_New(0.0f, 0.0f, 0.0f);
     gfx.t.light_pos = FVec4_New(0.0f, 3.0f, 0.0f, 1.0f);
 
-    Map level("romfs:/test_room.3map");
+    Map level("romfs:/flounder-lows.3map");
     if (!level.valid) {
         LOG("level load failed!");
     }
@@ -67,6 +67,12 @@ int main()
 
         if (kDown & KEY_DOWN)
             gfx.t.camera_position.y -= 0.5f;
+
+        if (kDown & KEY_RIGHT)
+            gfx.t.camera_position.x += 0.5f;
+
+        if (kDown & KEY_LEFT)
+            gfx.t.camera_position.x -= 0.5f;
 
         printf("\x1b[29;1Hgpu: %5.2f%%  cpu: %5.2f%%  buf:%5.2f%%\n",
                C3D_GetDrawingTime()*3, C3D_GetProcessingTime()*3, C3D_GetCmdBufUsage()*100

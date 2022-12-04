@@ -77,9 +77,9 @@ Gfx::State::State() {
 
     // This should probably move to each Model if it's not costly
     static const C3D_Material material = {
-        { 0.2f, 0.2f, 0.2f }, //ambient
+        { 0.4f, 0.4f, 0.4f }, //ambient
         { 0.4f, 0.4f, 0.4f }, //diffuse
-        { 0.4f, 0.4f, 0.4f }, //specular0
+        { 0.2f, 0.2f, 0.2f }, //specular0
         { 0.0f, 0.0f, 0.0f }, //specular1
         { 0.0f, 0.0f, 0.0f }, //emission
     };
