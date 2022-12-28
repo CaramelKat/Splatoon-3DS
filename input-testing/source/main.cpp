@@ -5,13 +5,12 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <unistd.h>
-
 #include <3ds.h>
 
 PrintConsole topScreen, bottomScreen;
 
 Result ret = 0;
-u32 con_type=  0;
+u32 con_type =  0;
 
 u8 data_channel = 1;
 udsNetworkStruct networkstruct;
@@ -41,7 +40,6 @@ char tmpstr[256];
 
 void print_constatus()
 {
-    Result ret=0;
     udsConnectionStatus constatus;
 
     //By checking the output of udsGetConnectionStatus you can check for nodes (including the current one) which just (dis)connected, etc.
@@ -62,7 +60,11 @@ void print_constatus()
         printf("node_bitmask=0x%x\n", (unsigned int)constatus.total_nodes);
     }
 }
-
+/**
+ * Searches for nearby networks that can be connected to
+ * @param iterations
+ * @return Number of networks found
+ */
 size_t searchForNetworks(int iterations) {
     u32 *tmpbuf;
     size_t tmpbuf_size;
@@ -89,7 +91,11 @@ size_t searchForNetworks(int iterations) {
 
     return network_count;
 }
-
+/**
+ * Gets the appdata for the specified network
+ * @param index
+ * @return char* of appdata from network
+ */
 char* getNetworkAppData(int index) {
     udsNetworkScanInfo *tmpNetwork = &networks[index];
     actual_size = 0;
@@ -215,6 +221,30 @@ char* getNetworkOwnerUsername(int index) {
     }
 
     return tmpstr;
+}
+
+void blockNewConnections(bool connections) {
+    if(con_type == 1)
+        udsSetNewConnectionsBlocked(connections, true, false);
+}
+
+void blockSpectators(bool spectators) {
+    if(spectators)
+        udsEjectSpectator()
+    else
+        udsAllowSpectators();
+}
+
+void terminateNetwork() {
+    if(con_type)
+    {
+        udsDestroyNetwork();
+    }
+    else
+    {
+        udsDisconnectNetwork();
+    }
+    udsUnbind(&bindctx);
 }
 
 void printNetworksMenu(size_t index) {
@@ -351,7 +381,7 @@ void uds_test()
                 break;
             }
         }
-
+        // pull data
         if(udsWaitDataAvailable(&bindctx, false, false))//Check whether data is available via udsPullPacket().
         {
             memset(tmpbuf, 0, tmpbuf_size);
@@ -398,30 +428,6 @@ void uds_test()
             }
         }
 
-        if(kDown & KEY_X)//Block new regular clients from connecting.
-        {
-            ret = udsSetNewConnectionsBlocked(true, true, false);
-            printf("udsSetNewConnectionsBlocked() for enabling blocking returned 0x%08x.\n", (unsigned int)ret);
-        }
-
-        if(kDown & KEY_B)//Unblock new regular clients from connecting.
-        {
-            ret = udsSetNewConnectionsBlocked(false, true, false);
-            printf("udsSetNewConnectionsBlocked() for disabling blocking returned 0x%08x.\n", (unsigned int)ret);
-        }
-
-        if(kDown & KEY_R)
-        {
-            ret = udsEjectSpectator();
-            printf("udsEjectSpectator() returned 0x%08x.\n", (unsigned int)ret);
-        }
-
-        if(kDown & KEY_L)
-        {
-            ret = udsAllowSpectators();
-            printf("udsAllowSpectators() returned 0x%08x.\n", (unsigned int)ret);
-        }
-
         if(udsWaitConnectionStatusEvent(false, false))
         {
             printf("Constatus event signaled.\n");
@@ -432,21 +438,11 @@ void uds_test()
     free(tmpbuf);
     tmpbuf = NULL;
 
-    if(con_type)
-    {
-        udsDestroyNetwork();
-    }
-    else
-    {
-        udsDisconnectNetwork();
-    }
-    udsUnbind(&bindctx);
+    terminateConnection();
 }
 
 int main()
 {
-    Result ret=0;
-
     gfxInitDefault();
 
     consoleInit(GFX_TOP, &topScreen);
