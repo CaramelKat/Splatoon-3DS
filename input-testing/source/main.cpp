@@ -8,22 +8,21 @@
 
 #include <3ds.h>
 
+PrintConsole topScreen, bottomScreen;
 
 Result ret = 0;
 u32 con_type=  0;
-
-u32 *tmpbuf;
-size_t tmpbuf_size;
 
 u8 data_channel = 1;
 udsNetworkStruct networkstruct;
 udsBindContext bindctx;
 udsNetworkScanInfo *networks = NULL;
 udsNetworkScanInfo *network = NULL;
+
 size_t total_networks = 0;
 
 u32 recv_buffer_size = UDS_DEFAULT_RECVBUFSIZE;
-u32 wlancommID = 0x48425620; //Unique ID, change this to your own.
+u32 wlancommID = 0x48424200;
 char *passphrase = "You're a squid now! You're a kid now!";
 
 udsConnectionType conntype = UDSCONTYPE_Client;
@@ -64,8 +63,13 @@ void print_constatus()
     }
 }
 
-void initializeNetwork() {
-    strncpy((char*)&appdata[4], "Hello World!", sizeof(appdata)-4);
+size_t searchForNetworks(u32 iterations) {
+    u32 *tmpbuf;
+    size_t tmpbuf_size;
+
+    size_t network_count = 0;
+
+    strncpy((char*)&appdata[4], "Test appdata.", sizeof(appdata)-4);
 
     printf("Successfully initialized.\n");
 
@@ -74,40 +78,31 @@ void initializeNetwork() {
     if(tmpbuf==NULL)
     {
         printf("Failed to allocate tmpbuf for beacon data.\n");
-        return;
+        return network_count;
     }
-}
 
-void searchForNetworks(int iterations) {
-    //With normal client-side handling you'd keep running network-scanning until the user chooses to stops scanning
-    // or selects a network to connect to. This example just scans a maximum of 10 times until at least one network is found.
-    printf("Starting to search");
+    //With normal client-side handling you'd keep running network-scanning until the user chooses to stops scanning or selects a network to connect to. This example just scans a maximum of 10 times until at least one network is found.
     for(u32 i = 0; i < iterations; i++)
     {
-        printf("Setting total networks to 0\n");
-        sleep(2);
-        total_networks = 0;
-
-        printf("memset tmpbuf to 0\n");
-        sleep(2);
         memset(tmpbuf, 0, sizeof(tmpbuf_size));
-
-        printf("Scan beacon\n");
-        sleep(2);
-        // Causes a data read abort exception??
-        ret = udsScanBeacons(tmpbuf, tmpbuf_size, &networks, &total_networks, wlancommID, 0, NULL, false);
-        printf("total_networks=%u.\n",(unsigned int)total_networks);
-
-        if(total_networks)break;
+        udsScanBeacons(tmpbuf, tmpbuf_size, &networks, &network_count, wlancommID, 0, NULL, false);
+        printf("total_networks=%u.\n", (unsigned int)network_count);
+        //if(total_networks)break;
     }
 
     free(tmpbuf);
     tmpbuf = NULL;
+
+    return network_count;
 }
 
-void getNetworkAppData() {
+void getNetworkAppData(int index) {
+    char tmpstr[256];
+    udsNetworkScanInfo *tmpNetwork = &networks[index];
     actual_size = 0;
-    ret = udsGetNetworkStructApplicationData(&network->network, out_appdata, sizeof(out_appdata), &actual_size);
+
+    ret = udsGetNetworkStructApplicationData(&tmpNetwork->network, out_appdata, sizeof(out_appdata), &actual_size);
+
     if(R_FAILED(ret) || actual_size!=sizeof(out_appdata))
     {
         printf("udsGetNetworkStructApplicationData() returned 0x%08x. actual_size = 0x%x.\n", (unsigned int)ret, actual_size);
@@ -126,7 +121,7 @@ void getNetworkAppData() {
     strncpy(tmpstr, (char*)&out_appdata[4], sizeof(out_appdata)-5);
     tmpstr[sizeof(out_appdata)-6]='\0';
 
-    printf("String from network appdata: %s\n", (char*)&out_appdata[4]);
+    printf("App data: %s", (char*)&out_appdata[4]);
 }
 
 void connectToNetwork(int index, bool spectator) {
@@ -136,7 +131,7 @@ void connectToNetwork(int index, bool spectator) {
 
     if(!total_networks)
         return;
-    network = &networks[0];
+    network = &networks[index];
 
     printf("network: total nodes = %u.\n", (unsigned int)network->network.total_nodes);
 
@@ -217,21 +212,47 @@ void createNetwork() {
     con_type = 0;
 }
 
+void printNetworksMenu(int index) {
+    consoleSelect(&bottomScreen);
+    printf("%x Available Networks:\n", total_networks);
+    for(size_t i = 0; i < total_networks; i++) {
+        printf("========================================\n");
+        if(i == index) printf(">");
+        else printf("|");
+        getNetworkAppData(i);
+        printf("|\n\n");
+    }
+    printf("========================================\n");
+    consoleSelect(&topScreen);
+}
+
 void uds_test()
 {
-    initializeNetwork();
+    u32 *tmpbuf;
+    size_t tmpbuf_size;
+
+    printf("Start network: A\nStart Search: B\n");
     while(1) {
         hidScanInput();
         u32 kDown = hidKeysDown();
 
-        if(kDown & KEY_A)break;
+        if(kDown & KEY_A) {
+            createNetwork();
+            break;
+        }
+        if(kDown & KEY_B) {
+            total_networks = searchForNetworks(5);
+            printNetworksMenu(0);
+            break;
+        }
+        if(kDown & KEY_Y) {
+            iprintf("\x1b[2J");
+        }
     }
-    searchForNetworks(5);
 
     if(total_networks)
     {
         //You can load appdata from the scanned beacon data here if you want.
-        getNetworkAppData();
 
         connectToNetwork(0, false);
 
@@ -271,8 +292,6 @@ void uds_test()
 
         con_type = 1;
     }
-    else
-        createNetwork();
 
     if(udsWaitConnectionStatusEvent(false, false))
     {
@@ -418,7 +437,11 @@ int main()
     Result ret=0;
 
     gfxInitDefault();
-    consoleInit(GFX_TOP, NULL);
+
+    consoleInit(GFX_TOP, &topScreen);
+    consoleInit(GFX_BOTTOM, &bottomScreen);
+
+    consoleSelect(&topScreen);
 
     printf("libctru UDS local-WLAN demo.\n");
 

@@ -1,6 +1,6 @@
 FROM devkitpro/devkitarm
 
-WORKDIR /Splatoon3DS
+WORKDIR /Splatoon3DS/input-testing
 
 RUN apt-get update && \
     apt-get -y install g++
