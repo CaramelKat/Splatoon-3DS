@@ -63,15 +63,10 @@ void print_constatus()
     }
 }
 
-size_t searchForNetworks(u32 iterations) {
+size_t searchForNetworks(int iterations) {
     u32 *tmpbuf;
     size_t tmpbuf_size;
-
     size_t network_count = 0;
-
-    strncpy((char*)&appdata[4], "Test appdata.", sizeof(appdata)-4);
-
-    printf("Successfully initialized.\n");
 
     tmpbuf_size = 0x4000;
     tmpbuf = (u32*)malloc(tmpbuf_size);
@@ -82,12 +77,11 @@ size_t searchForNetworks(u32 iterations) {
     }
 
     //With normal client-side handling you'd keep running network-scanning until the user chooses to stops scanning or selects a network to connect to. This example just scans a maximum of 10 times until at least one network is found.
-    for(u32 i = 0; i < iterations; i++)
+    for(int i = 0; i < iterations; i++)
     {
         memset(tmpbuf, 0, sizeof(tmpbuf_size));
         udsScanBeacons(tmpbuf, tmpbuf_size, &networks, &network_count, wlancommID, 0, NULL, false);
         printf("total_networks=%u.\n", (unsigned int)network_count);
-        //if(total_networks)break;
     }
 
     free(tmpbuf);
@@ -96,8 +90,7 @@ size_t searchForNetworks(u32 iterations) {
     return network_count;
 }
 
-void getNetworkAppData(int index) {
-    char tmpstr[256];
+char* getNetworkAppData(int index) {
     udsNetworkScanInfo *tmpNetwork = &networks[index];
     actual_size = 0;
 
@@ -107,21 +100,15 @@ void getNetworkAppData(int index) {
     {
         printf("udsGetNetworkStructApplicationData() returned 0x%08x. actual_size = 0x%x.\n", (unsigned int)ret, actual_size);
         free(networks);
-        return;
+        return "Invalid AppData size";
     }
-
-    memset(tmpstr, 0, sizeof(tmpstr));
     if(memcmp(out_appdata, appdata, 4)!=0)
     {
         printf("The first 4-bytes of appdata is invalid.\n");
         free(networks);
-        return;
+        return "Invalid AppData token";
     }
-
-    strncpy(tmpstr, (char*)&out_appdata[4], sizeof(out_appdata)-5);
-    tmpstr[sizeof(out_appdata)-6]='\0';
-
-    printf("App data: %s", (char*)&out_appdata[4]);
+    return (char*)&out_appdata[4];
 }
 
 void connectToNetwork(int index, bool spectator) {
@@ -175,12 +162,13 @@ void connectToNetwork(int index, bool spectator) {
     }
 
     free(networks);
-
+    con_type = 1;
     printf("Connected.\n");
 }
 
 void createNetwork() {
     udsGenerateDefaultNetworkStruct(&networkstruct, wlancommID, 0, UDS_MAXNODES);
+    strncpy((char*)&appdata[4], "Ur a kid ur a sq", sizeof(appdata)-4);
 
     printf("Creating the network...\n");
     ret = udsCreateNetwork(&networkstruct, passphrase, strlen(passphrase)+1, &bindctx, data_channel, recv_buffer_size);
@@ -212,26 +200,84 @@ void createNetwork() {
     con_type = 0;
 }
 
-void printNetworksMenu(int index) {
+char* getNetworkOwnerUsername(int index) {
+    if(!udsCheckNodeInfoInitialized(&networks[index].nodes[0]))
+        return "Unknown";
+
+    memset(tmpstr, 0, sizeof(tmpstr));
+
+    ret = udsGetNodeInfoUsername(&networks[index].nodes[0], tmpstr);
+    if(R_FAILED(ret))
+    {
+        printf("udsGetNodeInfoUsername() returned 0x%08x.\n", (unsigned int)ret);
+        free(networks);
+        return "Unknown";
+    }
+
+    return tmpstr;
+}
+
+void printNetworksMenu(size_t index) {
     consoleSelect(&bottomScreen);
-    printf("%x Available Networks:\n", total_networks);
+    iprintf("\x1b[2J");
+    printf("%x Available Networks:\n\n", total_networks);
     for(size_t i = 0; i < total_networks; i++) {
-        printf("========================================\n");
-        if(i == index) printf(">");
-        else printf("|");
-        getNetworkAppData(i);
+        printf("  ====================================\n\n");
+        if(i == index) printf("> ");
+        else printf("| ");
+        printf("%.*s", 10, getNetworkAppData(i));
+        printf("\t%s", getNetworkOwnerUsername(i));
         printf("|\n\n");
     }
-    printf("========================================\n");
+    printf("  ====================================\n");
     consoleSelect(&topScreen);
 }
 
-void uds_test()
-{
-    u32 *tmpbuf;
-    size_t tmpbuf_size;
+void showNetworkMenu() {
+    if(!total_networks)
+        return;
+    int index = 0;
+    printNetworksMenu(index);
+    while(1) {
+        gspWaitForVBlank();
+        hidScanInput();
+        u32 kDown = hidKeysDown();
 
-    printf("Start network: A\nStart Search: B\n");
+        if(kDown & KEY_UP) {
+            index--;
+        }
+        else if(kDown & KEY_DOWN) {
+            index++;
+        }
+        if(index < 0)
+            index = 0;
+        if(index > (int)total_networks - 1)
+            index = (int)total_networks - 1;
+        if(kDown & KEY_A) {
+            consoleSelect(&bottomScreen);
+            iprintf("\x1b[2J");
+            consoleSelect(&topScreen);
+            connectToNetwork(index, false);
+            break;
+        }
+        else if(kDown & KEY_B) {
+            consoleSelect(&bottomScreen);
+            iprintf("\x1b[2J");
+            consoleSelect(&topScreen);
+            connectToNetwork(index, true);
+            break;
+        }
+        if(kDown & KEY_START) {
+            return;
+        }
+        if(kDown) {
+            printNetworksMenu(index);
+        }
+    }
+}
+
+void showMainMenu() {
+    printf("Start network: A\nStart Search: B\nExit: Start\n");
     while(1) {
         hidScanInput();
         u32 kDown = hidKeysDown();
@@ -242,56 +288,19 @@ void uds_test()
         }
         if(kDown & KEY_B) {
             total_networks = searchForNetworks(5);
-            printNetworksMenu(0);
+            showNetworkMenu();
             break;
         }
-        if(kDown & KEY_Y) {
-            iprintf("\x1b[2J");
+        if(kDown & KEY_START) {
+            return;
         }
     }
+}
 
-    if(total_networks)
-    {
-        //You can load appdata from the scanned beacon data here if you want.
-
-        connectToNetwork(0, false);
-
-        tmp = 0;
-        ret = udsGetChannel((u8*)&tmp);//Normally you don't need to use this.
-        printf("udsGetChannel() returned 0x%08x. channel = %u.\n", (unsigned int)ret, (unsigned int)tmp);
-        if(R_FAILED(ret))
-        {
-            return;
-        }
-
-        //You can load the appdata with this once connected to the network, if you want.
-        memset(out_appdata, 0, sizeof(out_appdata));
-        actual_size = 0;
-        ret = udsGetApplicationData(out_appdata, sizeof(out_appdata), &actual_size);
-        if(R_FAILED(ret) || actual_size!=sizeof(out_appdata))
-        {
-            printf("udsGetApplicationData() returned 0x%08x. actual_size = 0x%x.\n", (unsigned int)ret, actual_size);
-            udsDisconnectNetwork();
-            udsUnbind(&bindctx);
-            return;
-        }
-
-        memset(tmpstr, 0, sizeof(tmpstr));
-        if(memcmp(out_appdata, appdata, 4)!=0)
-        {
-            printf("The first 4-bytes of appdata is invalid.\n");
-            udsDisconnectNetwork();
-            udsUnbind(&bindctx);
-            return;
-        }
-
-        strncpy(tmpstr, (char*)&out_appdata[4], sizeof(out_appdata)-5);
-        tmpstr[sizeof(out_appdata)-6]='\0';
-
-        printf("String from appdata: %s\n", (char*)&out_appdata[4]);
-
-        con_type = 1;
-    }
+void uds_test()
+{
+    u32 *tmpbuf;
+    size_t tmpbuf_size;
 
     if(udsWaitConnectionStatusEvent(false, false))
     {
@@ -299,11 +308,13 @@ void uds_test()
         print_constatus();
     }
 
+    showMainMenu();
+
     printf("Press A to stop data transfer.\n");
 
     tmpbuf_size = UDS_DATAFRAME_MAXSIZE;
     tmpbuf = (u32*)malloc(tmpbuf_size);
-    if(tmpbuf==NULL)
+    if(tmpbuf == NULL)
     {
         printf("Failed to allocate tmpbuf for receiving data.\n");
 
