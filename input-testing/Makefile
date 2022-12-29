@@ -7,9 +7,9 @@ $(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>dev
 endif
 
 TOPDIR ?= $(CURDIR)
-IPADDRESS = "192.168.137.200"
-IPADDRESS2 = "192.168.137.175"
-IPADDRESS3 = "192.168.137.213"
+IPADDRESS = "192.168.137.213"
+IPADDRESS2 = "192.168.137.153"
+IPADDRESS3 = "192.168.137.175"
 include $(DEVKITARM)/3ds_rules
 
 #---------------------------------------------------------------------------------

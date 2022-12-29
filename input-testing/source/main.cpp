@@ -35,13 +35,6 @@ udsConnectionType conntype = UDSCONTYPE_Client;
 size_t total_networks = 0;
 
 u32 transfer_data, prev_transfer_data = 0;
-size_t actual_size;
-u16 src_NetworkNodeID;
-
-// TODO: Fix this. This is awful. Need to find better way to pass data around
-udsNodeInfo tmpnode;
-char tmpstr[256];
-u8 out_appdata[0x14];
 
 // TODO: Remove for debugging
 PrintConsole topScreen, bottomScreen;
@@ -91,13 +84,14 @@ size_t searchForNetworks(int iterations) {
 
 /**
  * Gets the appdata for the specified network
- * @param index
- * @return char* of appdata from network
+ * @param index index of network to parse app data from
+ * @param output char* to store output
  */
-void getNetworkAppData(int index, u8 out_appdata) {
+void getNetworkAppData(int index, char* output) {
     Result ret = 0;
+    u8 out_appdata[0x14];
     udsNetworkScanInfo *tmpNetwork = &networks[index];
-    actual_size = 0;
+    size_t actual_size = 0;
 
     ret = udsGetNetworkStructApplicationData(&tmpNetwork->network, out_appdata, sizeof(out_appdata), &actual_size);
 
@@ -105,15 +99,15 @@ void getNetworkAppData(int index, u8 out_appdata) {
     {
         printf("udsGetNetworkStructApplicationData() returned 0x%08x. actual_size = 0x%x.\n", (unsigned int)ret, actual_size);
         free(networks);
-        return "Invalid AppData size";
     }
-    if(memcmp(out_appdata, appdata, 4) != 0)
+    if(memcmp(out_appdata, appdata, 4)!=0)
     {
         printf("The first 4-bytes of appdata is invalid.\n");
         free(networks);
-        return "Invalid AppData token";
     }
-    return (char*)&out_appdata[4];
+
+    strcpy(output, (char*)&out_appdata[4]);
+    //free(out_appdata);
 }
 
 /**
@@ -127,6 +121,7 @@ Result connectToNetwork(int index, bool spectator) {
     // along with the parsed appdata if you want. For this example this just uses the first detected network and then displays the username of each node.
     //If appdata isn't enough, you can do what DLP does loading the icon data etc: connect to the network as a spectator temporarily for receiving broadcasted data frames.
     Result ret = 0;
+    char tmpstr[255];
     if(!total_networks)
         return ret;
     network = &networks[index];
@@ -195,8 +190,7 @@ Result createNetwork() {
         printf("udsCreateNetwork() returned 0x%08x.\n", (unsigned int)ret);
         return ret;
     }
-    //If you want to use appdata, you can set the appdata whenever you want after creating the network.
-    // If you need more space for appdata, you can set different chunks of appdata over time.
+
     ret = udsSetApplicationData(appdata, sizeof(appdata));
     if(R_FAILED(ret))
     {
@@ -218,13 +212,13 @@ Result createNetwork() {
 /**
  * Get a specified network's host username
  * @param index
- * @return
+ * @param output
  */
-char* getNetworkOwnerUsername(int index) {
+void getNetworkOwnerUsername(int index, char* output) {
     Result ret = 0;
-    char tmpstr[256];
+    char tmpstr[0x0b];
     if(!udsCheckNodeInfoInitialized(&networks[index].nodes[0]))
-        return "Unknown";
+        return;
 
     memset(tmpstr, 0, sizeof(tmpstr));
 
@@ -233,10 +227,9 @@ char* getNetworkOwnerUsername(int index) {
     {
         printf("udsGetNodeInfoUsername() returned 0x%08x.\n", (unsigned int)ret);
         free(networks);
-        return "Unknown";
     }
 
-    return tmpstr;
+    strcpy(output, tmpstr);
 }
 
 /**
@@ -290,9 +283,14 @@ void printNetworksMenu(size_t index) {
         printf("  ====================================\n\n");
         if(i == index) printf("> ");
         else printf("| ");
-        printf("%.*s", 10, getNetworkAppData(i));
-        printf("\t%s", getNetworkOwnerUsername(i));
+        char *tmp = new char[0x14];
+        char *name = new char[0x0b];
+        getNetworkAppData(i, tmp);
+        getNetworkOwnerUsername(i, name);
+        printf("%.*s", 10, tmp);
+        printf("\t%s", name);
         printf("|\n\n");
+        free(tmp);
     }
     printf("  ====================================\n");
     consoleSelect(&topScreen);
@@ -417,8 +415,8 @@ void uds_test()
         if(udsWaitDataAvailable(&bindctx, false, false))//Check whether data is available via udsPullPacket().
         {
             memset(tmpbuf, 0, tmpbuf_size);
-            actual_size = 0;
-            src_NetworkNodeID = 0;
+            size_t actual_size = 0;
+            u16 src_NetworkNodeID = 0;
             ret = udsPullPacket(&bindctx, tmpbuf, tmpbuf_size, &actual_size, &src_NetworkNodeID);
             if(R_FAILED(ret))
             {
