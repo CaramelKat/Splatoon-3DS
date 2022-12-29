@@ -1,3 +1,10 @@
+/*
+ * Wrapper library for communication via UDS
+ * on the 3DS
+ *
+ * Written By: Jemma Poffinbarger
+ * Last Updated: December 19th, 2022
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,59 +14,49 @@
 #include <unistd.h>
 #include <3ds.h>
 
-PrintConsole topScreen, bottomScreen;
+const u32 receive_buffer_size = UDS_DEFAULT_RECVBUFSIZE;
+const u32 wlancommID = 0x48424200;
+const u8 data_channel = 1;
+const char AppDataString[0x11] = "Ur a kid ur a sq";
+const char *passphrase = "You're a squid now! You're a kid now!";
 
-Result ret = 0;
+_Static_assert(18 > sizeof(AppDataString), "AppDataString too long! Must be less than 16 chars.");
+
+u8 appdata[0x14] = {0x69, 0x8a, 0x05, 0x5c};
+
+// 0 host 1 client
 u32 con_type =  0;
 
-u8 data_channel = 1;
-udsNetworkStruct networkstruct;
 udsBindContext bindctx;
 udsNetworkScanInfo *networks = NULL;
 udsNetworkScanInfo *network = NULL;
+udsConnectionType conntype = UDSCONTYPE_Client;
 
 size_t total_networks = 0;
-
-u32 recv_buffer_size = UDS_DEFAULT_RECVBUFSIZE;
-u32 wlancommID = 0x48424200;
-char *passphrase = "You're a squid now! You're a kid now!";
-
-udsConnectionType conntype = UDSCONTYPE_Client;
 
 u32 transfer_data, prev_transfer_data = 0;
 size_t actual_size;
 u16 src_NetworkNodeID;
-u32 tmp = 0;
 
+// TODO: Fix this. This is awful. Need to find better way to pass data around
 udsNodeInfo tmpnode;
-
-u8 appdata[0x14] = {0x69, 0x8a, 0x05, 0x5c};
+char tmpstr[256];
 u8 out_appdata[0x14];
 
-char tmpstr[256];
+// TODO: Remove for debugging
+PrintConsole topScreen, bottomScreen;
 
-void print_constatus()
-{
-    udsConnectionStatus constatus;
-
-    //By checking the output of udsGetConnectionStatus you can check for nodes (including the current one) which just (dis)connected, etc.
-    ret = udsGetConnectionStatus(&constatus);
+/**
+ * Initialize the UDS Library
+ */
+Result initUDS() {
+    Result ret = 0;
+    ret = udsInit(0x3000, NULL); //The sharedmem size only needs to be slightly larger than the total receive_buffer_size for all binds, with page-alignment.
     if(R_FAILED(ret))
-    {
-        printf("udsGetConnectionStatus() returned 0x%08x.\n", (unsigned int)ret);
-    }
-    else
-    {
-        printf("constatus:\nstatus=0x%x\n", (unsigned int)constatus.status);
-        printf("1=0x%x\n", (unsigned int)constatus.unk_x4);
-        printf("cur_NetworkNodeID=0x%x\n", (unsigned int)constatus.cur_NetworkNodeID);
-        printf("unk_xa=0x%x\n", (unsigned int)constatus.unk_xa);
-        for(u32 i = 0; i<(0x20>>2); i++)printf("%u=0x%x ", (unsigned int)i+3, (unsigned int)constatus.unk_xc[i]);
-        printf("\ntotal_nodes=0x%x\n", (unsigned int)constatus.total_nodes);
-        printf("max_nodes=0x%x\n", (unsigned int)constatus.max_nodes);
-        printf("node_bitmask=0x%x\n", (unsigned int)constatus.total_nodes);
-    }
+        printf("udsInit failed: 0x%08x.\n", (unsigned int)ret);
+    return ret;
 }
+
 /**
  * Searches for nearby networks that can be connected to
  * @param iterations
@@ -91,12 +88,14 @@ size_t searchForNetworks(int iterations) {
 
     return network_count;
 }
+
 /**
  * Gets the appdata for the specified network
  * @param index
  * @return char* of appdata from network
  */
-char* getNetworkAppData(int index) {
+void getNetworkAppData(int index, u8 out_appdata) {
+    Result ret = 0;
     udsNetworkScanInfo *tmpNetwork = &networks[index];
     actual_size = 0;
 
@@ -108,7 +107,7 @@ char* getNetworkAppData(int index) {
         free(networks);
         return "Invalid AppData size";
     }
-    if(memcmp(out_appdata, appdata, 4)!=0)
+    if(memcmp(out_appdata, appdata, 4) != 0)
     {
         printf("The first 4-bytes of appdata is invalid.\n");
         free(networks);
@@ -117,13 +116,19 @@ char* getNetworkAppData(int index) {
     return (char*)&out_appdata[4];
 }
 
-void connectToNetwork(int index, bool spectator) {
+/**
+ * Connects to a network by it's index either as a client
+ * or a spectator.
+ * @param index
+ * @param spectator
+ */
+Result connectToNetwork(int index, bool spectator) {
     //At this point you'd let the user select which network to connect to and optionally display the first node's username(the host),
     // along with the parsed appdata if you want. For this example this just uses the first detected network and then displays the username of each node.
     //If appdata isn't enough, you can do what DLP does loading the icon data etc: connect to the network as a spectator temporarily for receiving broadcasted data frames.
-
+    Result ret = 0;
     if(!total_networks)
-        return;
+        return ret;
     network = &networks[index];
 
     printf("network: total nodes = %u.\n", (unsigned int)network->network.total_nodes);
@@ -139,7 +144,7 @@ void connectToNetwork(int index, bool spectator) {
         {
             printf("udsGetNodeInfoUsername() returned 0x%08x.\n", (unsigned int)ret);
             free(networks);
-            return;
+            return ret;
         }
 
         printf("node%u username: %s\n", (unsigned int)i, tmpstr);
@@ -156,10 +161,11 @@ void connectToNetwork(int index, bool spectator) {
     }
     for(u32 i = 0; i < 10; i++)
     {
-        ret = udsConnectNetwork(&network->network, passphrase, strlen(passphrase)+1, &bindctx, UDS_BROADCAST_NETWORKNODEID, conntype, data_channel, recv_buffer_size);
+        ret = udsConnectNetwork(&network->network, passphrase, strlen(passphrase)+1, &bindctx, UDS_BROADCAST_NETWORKNODEID, conntype, data_channel, receive_buffer_size);
         if(R_FAILED(ret))
         {
             printf("udsConnectNetwork() returned 0x%08x.\n", (unsigned int)ret);
+            return ret;
         }
         else
         {
@@ -170,43 +176,53 @@ void connectToNetwork(int index, bool spectator) {
     free(networks);
     con_type = 1;
     printf("Connected.\n");
+    return ret;
 }
 
-void createNetwork() {
+/**
+ * Creates a new network
+ */
+Result createNetwork() {
+    Result ret = 0;
+    udsNetworkStruct networkstruct;
     udsGenerateDefaultNetworkStruct(&networkstruct, wlancommID, 0, UDS_MAXNODES);
-    strncpy((char*)&appdata[4], "Ur a kid ur a sq", sizeof(appdata)-4);
+    strncpy((char*)&appdata[4], AppDataString, sizeof(appdata)-4);
 
     printf("Creating the network...\n");
-    ret = udsCreateNetwork(&networkstruct, passphrase, strlen(passphrase)+1, &bindctx, data_channel, recv_buffer_size);
+    ret = udsCreateNetwork(&networkstruct, passphrase, strlen(passphrase)+1, &bindctx, data_channel, receive_buffer_size);
     if(R_FAILED(ret))
     {
         printf("udsCreateNetwork() returned 0x%08x.\n", (unsigned int)ret);
-        return;
+        return ret;
     }
-
-    ret = udsSetApplicationData(appdata, sizeof(appdata));//If you want to use appdata, you can set the appdata whenever you want after creating the network. If you need more space for appdata, you can set different chunks of appdata over time.
+    //If you want to use appdata, you can set the appdata whenever you want after creating the network.
+    // If you need more space for appdata, you can set different chunks of appdata over time.
+    ret = udsSetApplicationData(appdata, sizeof(appdata));
     if(R_FAILED(ret))
     {
         printf("udsSetApplicationData() returned 0x%08x.\n", (unsigned int)ret);
         udsDestroyNetwork();
         udsUnbind(&bindctx);
-        return;
+        return ret;
     }
-
-    tmp = 0;
-    ret = udsGetChannel((u8*)&tmp);//Normally you don't need to use this.
-    printf("udsGetChannel() returned 0x%08x. channel = %u.\n", (unsigned int)ret, (unsigned int)tmp);
     if(R_FAILED(ret))
     {
         udsDestroyNetwork();
         udsUnbind(&bindctx);
-        return;
+        return ret;
     }
-
     con_type = 0;
+    return ret;
 }
 
+/**
+ * Get a specified network's host username
+ * @param index
+ * @return
+ */
 char* getNetworkOwnerUsername(int index) {
+    Result ret = 0;
+    char tmpstr[256];
     if(!udsCheckNodeInfoInitialized(&networks[index].nodes[0]))
         return "Unknown";
 
@@ -223,30 +239,49 @@ char* getNetworkOwnerUsername(int index) {
     return tmpstr;
 }
 
-void blockNewConnections(bool connections) {
+/**
+ * Prevent new connections
+ * @param connections
+ */
+Result blockNewConnections(bool connections) {
     if(con_type == 1)
-        udsSetNewConnectionsBlocked(connections, true, false);
+        return udsSetNewConnectionsBlocked(connections, true, false);
+    return -3;
 }
 
-void blockSpectators(bool spectators) {
+/**
+ * Prevent spectators from joining network
+ * @param spectators
+ */
+Result blockSpectators(bool spectators) {
+    Result ret = 0;
     if(spectators)
-        udsEjectSpectator()
+        ret = udsEjectSpectator();
     else
-        udsAllowSpectators();
+        ret = udsAllowSpectators();
+    return ret;
 }
 
-void terminateNetwork() {
+/**
+ * Terminates the network. If host, it disconnects all users
+ * if a client, disconnects from the network
+ */
+Result terminateNetwork() {
+    Result ret = 0;
     if(con_type)
-    {
-        udsDestroyNetwork();
-    }
+        ret = udsDestroyNetwork();
     else
-    {
-        udsDisconnectNetwork();
-    }
+        ret = udsDisconnectNetwork();
     udsUnbind(&bindctx);
+    udsExit();
+    return ret;
 }
 
+/**
+ * DEBUG
+ * Prints found networks
+ * @param index
+ */
 void printNetworksMenu(size_t index) {
     consoleSelect(&bottomScreen);
     iprintf("\x1b[2J");
@@ -263,6 +298,10 @@ void printNetworksMenu(size_t index) {
     consoleSelect(&topScreen);
 }
 
+/**
+ * DEBUG
+ * Runs a menu to select a network
+ */
 void showNetworkMenu() {
     if(!total_networks)
         return;
@@ -306,6 +345,10 @@ void showNetworkMenu() {
     }
 }
 
+/**
+ * DEBUG
+ * Runs the main menu to either create or search for a network
+ */
 void showMainMenu() {
     printf("Start network: A\nStart Search: B\nExit: Start\n");
     while(1) {
@@ -335,7 +378,6 @@ void uds_test()
     if(udsWaitConnectionStatusEvent(false, false))
     {
         printf("Constatus event signaled.\n");
-        print_constatus();
     }
 
     showMainMenu();
@@ -347,20 +389,10 @@ void uds_test()
     if(tmpbuf == NULL)
     {
         printf("Failed to allocate tmpbuf for receiving data.\n");
-
-        if(con_type)
-        {
-            udsDestroyNetwork();
-        }
-        else
-        {
-            udsDisconnectNetwork();
-        }
-        udsUnbind(&bindctx);
-
+        terminateNetwork();
         return;
     }
-
+    Result ret = 0;
     while(1)
     {
         gspWaitForVBlank();
@@ -400,45 +432,16 @@ void uds_test()
             }
         }
 
-        if(kDown & KEY_Y)
-        {
-            ret = udsGetNodeInformation(0x2, &tmpnode);//This can be used to get the NodeInfo for a node which just connected, for example.
-            if(R_FAILED(ret))
-            {
-                printf("udsGetNodeInformation() returned 0x%08x.\n", (unsigned int)ret);
-            }
-            else
-            {
-                memset(tmpstr, 0, sizeof(tmpstr));
-
-                ret = udsGetNodeInfoUsername(&tmpnode, tmpstr);
-                if(R_FAILED(ret))
-                {
-                    printf("udsGetNodeInfoUsername() returned 0x%08x for udsGetNodeInfoUsername.\n", (unsigned int)ret);
-                }
-                else
-                {
-                    printf("node username: %s\n", tmpstr);
-                    printf("node unk_x1c=0x%x\n", (unsigned int)tmpnode.unk_x1c);
-                    printf("node flag=0x%x\n", (unsigned int)tmpnode.flag);
-                    printf("node pad_x1f=0x%x\n", (unsigned int)tmpnode.pad_x1f);
-                    printf("node NetworkNodeID=0x%x\n", (unsigned int)tmpnode.NetworkNodeID);
-                    printf("node word_x24=0x%x\n", (unsigned int)tmpnode.word_x24);
-                }
-            }
-        }
-
         if(udsWaitConnectionStatusEvent(false, false))
         {
             printf("Constatus event signaled.\n");
-            print_constatus();
         }
     }
 
     free(tmpbuf);
     tmpbuf = NULL;
 
-    terminateConnection();
+    terminateNetwork();
 }
 
 int main()
@@ -452,16 +455,8 @@ int main()
 
     printf("libctru UDS local-WLAN demo.\n");
 
-    ret = udsInit(0x3000, NULL);//The sharedmem size only needs to be slightly larger than the total recv_buffer_size for all binds, with page-alignment.
-    if(R_FAILED(ret))
-    {
-        printf("udsInit failed: 0x%08x.\n", (unsigned int)ret);
-    }
-    else
-    {
-        uds_test();
-        udsExit();
-    }
+    initUDS();
+    uds_test();
 
     printf("Press START to exit.\n");
 
