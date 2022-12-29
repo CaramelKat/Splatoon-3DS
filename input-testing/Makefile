@@ -166,7 +166,7 @@ endif
 #---------------------------------------------------------------------------------
 all: $(BUILD) $(GFXBUILD) $(DEPSDIR) $(ROMFS_T3XFILES) $(T3XHFILES)
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
-	@3dslink $(TARGET).3dsx --address $(IPADDRESS)
+	#@3dslink $(TARGET).3dsx --address $(IPADDRESS)
 	@3dslink $(TARGET).3dsx --address $(IPADDRESS2)
 	@3dslink $(TARGET).3dsx --address $(IPADDRESS3)
 

@@ -3,7 +3,7 @@
  * on the 3DS
  *
  * Written By: Jemma Poffinbarger
- * Last Updated: December 19th, 2022
+ * Last Updated: December 29th, 2022
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,63 +51,38 @@ Result initUDS() {
 }
 
 /**
- * Searches for nearby networks that can be connected to
- * @param iterations
- * @return Number of networks found
+ * Creates a new network
  */
-size_t searchForNetworks(int iterations) {
-    u32 *tmpbuf;
-    size_t tmpbuf_size;
-    size_t network_count = 0;
-
-    tmpbuf_size = 0x4000;
-    tmpbuf = (u32*)malloc(tmpbuf_size);
-    if(tmpbuf==NULL)
-    {
-        printf("Failed to allocate tmpbuf for beacon data.\n");
-        return network_count;
-    }
-
-    //With normal client-side handling you'd keep running network-scanning until the user chooses to stops scanning or selects a network to connect to. This example just scans a maximum of 10 times until at least one network is found.
-    for(int i = 0; i < iterations; i++)
-    {
-        memset(tmpbuf, 0, sizeof(tmpbuf_size));
-        udsScanBeacons(tmpbuf, tmpbuf_size, &networks, &network_count, wlancommID, 0, NULL, false);
-        printf("total_networks=%u.\n", (unsigned int)network_count);
-    }
-
-    free(tmpbuf);
-    tmpbuf = NULL;
-
-    return network_count;
-}
-
-/**
- * Gets the appdata for the specified network
- * @param index index of network to parse app data from
- * @param output char* to store output
- */
-void getNetworkAppData(int index, char* output) {
+Result createNetwork() {
     Result ret = 0;
-    u8 out_appdata[0x14];
-    udsNetworkScanInfo *tmpNetwork = &networks[index];
-    size_t actual_size = 0;
+    udsNetworkStruct networkstruct;
+    udsGenerateDefaultNetworkStruct(&networkstruct, wlancommID, 0, UDS_MAXNODES);
+    strncpy((char*)&appdata[4], AppDataString, sizeof(appdata)-4);
 
-    ret = udsGetNetworkStructApplicationData(&tmpNetwork->network, out_appdata, sizeof(out_appdata), &actual_size);
-
-    if(R_FAILED(ret) || actual_size!=sizeof(out_appdata))
+    printf("Creating the network...\n");
+    ret = udsCreateNetwork(&networkstruct, passphrase, strlen(passphrase)+1, &bindctx, data_channel, receive_buffer_size);
+    if(R_FAILED(ret))
     {
-        printf("udsGetNetworkStructApplicationData() returned 0x%08x. actual_size = 0x%x.\n", (unsigned int)ret, actual_size);
-        free(networks);
-    }
-    if(memcmp(out_appdata, appdata, 4)!=0)
-    {
-        printf("The first 4-bytes of appdata is invalid.\n");
-        free(networks);
+        printf("udsCreateNetwork() returned 0x%08x.\n", (unsigned int)ret);
+        return ret;
     }
 
-    strcpy(output, (char*)&out_appdata[4]);
-    //free(out_appdata);
+    ret = udsSetApplicationData(appdata, sizeof(appdata));
+    if(R_FAILED(ret))
+    {
+        printf("udsSetApplicationData() returned 0x%08x.\n", (unsigned int)ret);
+        udsDestroyNetwork();
+        udsUnbind(&bindctx);
+        return ret;
+    }
+    if(R_FAILED(ret))
+    {
+        udsDestroyNetwork();
+        udsUnbind(&bindctx);
+        return ret;
+    }
+    con_type = 0;
+    return ret;
 }
 
 /**
@@ -175,38 +150,63 @@ Result connectToNetwork(int index, bool spectator) {
 }
 
 /**
- * Creates a new network
+ * Searches for nearby networks that can be connected to
+ * @param iterations
+ * @return Number of networks found
  */
-Result createNetwork() {
+size_t searchForNetworks(int iterations) {
+    u32 *tmpbuf;
+    size_t tmpbuf_size;
+    size_t network_count = 0;
+
+    tmpbuf_size = 0x4000;
+    tmpbuf = (u32*)malloc(tmpbuf_size);
+    if(tmpbuf==NULL)
+    {
+        printf("Failed to allocate tmpbuf for beacon data.\n");
+        return network_count;
+    }
+
+    //With normal client-side handling you'd keep running network-scanning until the user chooses to stops scanning or selects a network to connect to. This example just scans a maximum of 10 times until at least one network is found.
+    for(int i = 0; i < iterations; i++)
+    {
+        memset(tmpbuf, 0, sizeof(tmpbuf_size));
+        udsScanBeacons(tmpbuf, tmpbuf_size, &networks, &network_count, wlancommID, 0, NULL, false);
+        printf("total_networks=%u.\n", (unsigned int)network_count);
+    }
+
+    free(tmpbuf);
+    tmpbuf = NULL;
+
+    return network_count;
+}
+
+/**
+ * Gets the appdata for the specified network
+ * @param index index of network to parse app data from
+ * @param output char* to store output
+ */
+void getNetworkAppData(int index, char* output) {
     Result ret = 0;
-    udsNetworkStruct networkstruct;
-    udsGenerateDefaultNetworkStruct(&networkstruct, wlancommID, 0, UDS_MAXNODES);
-    strncpy((char*)&appdata[4], AppDataString, sizeof(appdata)-4);
+    u8 out_appdata[0x14];
+    udsNetworkScanInfo *tmpNetwork = &networks[index];
+    size_t actual_size = 0;
 
-    printf("Creating the network...\n");
-    ret = udsCreateNetwork(&networkstruct, passphrase, strlen(passphrase)+1, &bindctx, data_channel, receive_buffer_size);
-    if(R_FAILED(ret))
+    ret = udsGetNetworkStructApplicationData(&tmpNetwork->network, out_appdata, sizeof(out_appdata), &actual_size);
+
+    if(R_FAILED(ret) || actual_size!=sizeof(out_appdata))
     {
-        printf("udsCreateNetwork() returned 0x%08x.\n", (unsigned int)ret);
-        return ret;
+        printf("udsGetNetworkStructApplicationData() returned 0x%08x. actual_size = 0x%x.\n", (unsigned int)ret, actual_size);
+        free(networks);
+    }
+    if(memcmp(out_appdata, appdata, 4)!=0)
+    {
+        printf("The first 4-bytes of appdata is invalid.\n");
+        free(networks);
     }
 
-    ret = udsSetApplicationData(appdata, sizeof(appdata));
-    if(R_FAILED(ret))
-    {
-        printf("udsSetApplicationData() returned 0x%08x.\n", (unsigned int)ret);
-        udsDestroyNetwork();
-        udsUnbind(&bindctx);
-        return ret;
-    }
-    if(R_FAILED(ret))
-    {
-        udsDestroyNetwork();
-        udsUnbind(&bindctx);
-        return ret;
-    }
-    con_type = 0;
-    return ret;
+    strcpy(output, (char*)&out_appdata[4]);
+    //free(out_appdata);
 }
 
 /**
@@ -294,6 +294,19 @@ void printNetworksMenu(size_t index) {
     }
     printf("  ====================================\n");
     consoleSelect(&topScreen);
+}
+/**
+ * Sends packet to either all or one client
+ * @param buffer
+ * @param node
+ * @return
+ */
+Result sendPacket(void * buffer, u16 node) {
+    Result ret = 0;
+    if(node == NULL)
+        node = UDS_BROADCAST_NETWORKNODEID;
+    ret = udsSendTo(node, data_channel, UDS_SENDFLAG_Default, buffer, sizeof(buffer));
+    return ret;
 }
 
 /**
@@ -404,12 +417,8 @@ void uds_test()
         //When the output from hidKeysHeld() changes, send it over the network.
         if(transfer_data != prev_transfer_data && conntype!=UDSCONTYPE_Spectator)//Spectators aren't allowed to send data.
         {
-            ret = udsSendTo(UDS_BROADCAST_NETWORKNODEID, data_channel, UDS_SENDFLAG_Default, &transfer_data, sizeof(transfer_data));
-            if(UDS_CHECK_SENDTO_FATALERROR(ret))
-            {
-                printf("udsSendTo() returned 0x%08x.\n", (unsigned int)ret);
-                break;
-            }
+            char *data = "Testing data";
+            sendPacket(data, NULL);
         }
         // pull data
         if(udsWaitDataAvailable(&bindctx, false, false))//Check whether data is available via udsPullPacket().
@@ -426,7 +435,8 @@ void uds_test()
 
             if(actual_size)//If no data frame is available, udsPullPacket() will return actual_size=0.
             {
-                printf("Received 0x%08x size=0x%08x from node 0x%x.\n", (unsigned int)tmpbuf[0], actual_size, (unsigned int)src_NetworkNodeID);
+                printf("\t\"%s\" size=0x%08x from node 0x%x.\n", tmpbuf, actual_size, (unsigned int)src_NetworkNodeID);
+                //printf("Received 0x%08x size=0x%08x from node 0x%x.\n", (unsigned int)tmpbuf[0], actual_size, (unsigned int)src_NetworkNodeID);
             }
         }
 
