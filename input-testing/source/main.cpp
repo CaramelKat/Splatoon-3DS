@@ -302,13 +302,64 @@ void printNetworksMenu(size_t index) {
  * @return
  */
 Result sendPacket(void * buffer, u16 node) {
+    printf("%d", strlen((char *)buffer));
     Result ret = 0;
+    if(conntype == UDSCONTYPE_Spectator)
+        return -3;
     if(node == NULL)
         node = UDS_BROADCAST_NETWORKNODEID;
     ret = udsSendTo(node, data_channel, UDS_SENDFLAG_Default, buffer, sizeof(buffer));
     return ret;
 }
 
+/**
+ *
+ * @param nextEvent
+ * @param wait
+ * @return
+ */
+bool packetAvailable(bool nextEvent, bool wait) {
+    return udsWaitDataAvailable(&bindctx, nextEvent, wait);
+}
+
+/**
+ *
+ * @param output
+ * @return
+ */
+Result pullPacket(void * output) {
+    Result ret = 0;
+    size_t tmpbuf_size = UDS_DATAFRAME_MAXSIZE;
+    u32 *tmpbuf = (u32*)malloc(tmpbuf_size);
+    output = (u32*)malloc(tmpbuf_size);
+
+    memset(tmpbuf, 0, tmpbuf_size);
+    if(tmpbuf == NULL)
+    {
+        printf("Failed to allocate tmpbuf for receiving data.\n");
+        terminateNetwork();
+        return -3;
+    }
+    size_t actual_size = 0;
+    u16 src_NetworkNodeID = 0;
+    ret = udsPullPacket(&bindctx, tmpbuf, tmpbuf_size, &actual_size, &src_NetworkNodeID);
+    if(R_FAILED(ret))
+    {
+        printf("udsPullPacket() returned 0x%08x.\n", (unsigned int)ret);
+        return ret;
+    }
+
+    if(actual_size)//If no data frame is available, udsPullPacket() will return actual_size=0.
+    {
+        printf("%d", strlen((char *)tmpbuf));
+        printf("\t\"%s\" size=0x%08x from node 0x%x.\n", (char *)tmpbuf, actual_size, (unsigned int)src_NetworkNodeID);
+        //memcpy(output, tmpbuf, sizeof(tmpbuf));
+        return ret;
+    }
+    free(tmpbuf);
+    tmpbuf = NULL;
+    return ret;
+}
 /**
  * DEBUG
  * Runs a menu to select a network
@@ -383,9 +434,6 @@ void showMainMenu() {
 
 void uds_test()
 {
-    u32 *tmpbuf;
-    size_t tmpbuf_size;
-
     if(udsWaitConnectionStatusEvent(false, false))
     {
         printf("Constatus event signaled.\n");
@@ -395,14 +443,6 @@ void uds_test()
 
     printf("Press A to stop data transfer.\n");
 
-    tmpbuf_size = UDS_DATAFRAME_MAXSIZE;
-    tmpbuf = (u32*)malloc(tmpbuf_size);
-    if(tmpbuf == NULL)
-    {
-        printf("Failed to allocate tmpbuf for receiving data.\n");
-        terminateNetwork();
-        return;
-    }
     Result ret = 0;
     while(1)
     {
@@ -415,29 +455,17 @@ void uds_test()
         transfer_data = hidKeysHeld();
 
         //When the output from hidKeysHeld() changes, send it over the network.
-        if(transfer_data != prev_transfer_data && conntype!=UDSCONTYPE_Spectator)//Spectators aren't allowed to send data.
+        if(transfer_data != prev_transfer_data)//Spectators aren't allowed to send data.
         {
             char *data = "Testing data";
+            printf("%d", strlen(data));
             sendPacket(data, NULL);
         }
         // pull data
-        if(udsWaitDataAvailable(&bindctx, false, false))//Check whether data is available via udsPullPacket().
+        if(packetAvailable(false, false))//Check whether data is available via udsPullPacket().
         {
-            memset(tmpbuf, 0, tmpbuf_size);
-            size_t actual_size = 0;
-            u16 src_NetworkNodeID = 0;
-            ret = udsPullPacket(&bindctx, tmpbuf, tmpbuf_size, &actual_size, &src_NetworkNodeID);
-            if(R_FAILED(ret))
-            {
-                printf("udsPullPacket() returned 0x%08x.\n", (unsigned int)ret);
-                break;
-            }
-
-            if(actual_size)//If no data frame is available, udsPullPacket() will return actual_size=0.
-            {
-                printf("\t\"%s\" size=0x%08x from node 0x%x.\n", tmpbuf, actual_size, (unsigned int)src_NetworkNodeID);
-                //printf("Received 0x%08x size=0x%08x from node 0x%x.\n", (unsigned int)tmpbuf[0], actual_size, (unsigned int)src_NetworkNodeID);
-            }
+            void * buffer;
+            ret = pullPacket(buffer);
         }
 
         if(udsWaitConnectionStatusEvent(false, false))
@@ -445,9 +473,6 @@ void uds_test()
             printf("Constatus event signaled.\n");
         }
     }
-
-    free(tmpbuf);
-    tmpbuf = NULL;
 
     terminateNetwork();
 }

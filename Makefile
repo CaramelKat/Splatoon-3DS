@@ -12,7 +12,7 @@ export CCHOST := $(CC)
 export CXXHOST := $(CXX)
 
 TOPDIR ?= $(CURDIR)
-IPADDRESS = "192.168.1.110"
+IPADDRESS = "192.168.137.188"
 include $(DEVKITARM)/3ds_rules
 
 #---------------------------------------------------------------------------------

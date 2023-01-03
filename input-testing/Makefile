@@ -7,8 +7,8 @@ $(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>dev
 endif
 
 TOPDIR ?= $(CURDIR)
-IPADDRESS = "192.168.137.213"
-IPADDRESS2 = "192.168.137.153"
+IPADDRESS = "192.168.137.153"
+IPADDRESS2 = "192.168.137.175"
 IPADDRESS3 = "192.168.137.175"
 include $(DEVKITARM)/3ds_rules
 
@@ -166,9 +166,9 @@ endif
 #---------------------------------------------------------------------------------
 all: $(BUILD) $(GFXBUILD) $(DEPSDIR) $(ROMFS_T3XFILES) $(T3XHFILES)
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
-	#@3dslink $(TARGET).3dsx --address $(IPADDRESS)
+	@3dslink $(TARGET).3dsx --address $(IPADDRESS)
 	@3dslink $(TARGET).3dsx --address $(IPADDRESS2)
-	@3dslink $(TARGET).3dsx --address $(IPADDRESS3)
+	#@3dslink $(TARGET).3dsx --address $(IPADDRESS3)
 
 $(BUILD):
 	@mkdir -p $@
