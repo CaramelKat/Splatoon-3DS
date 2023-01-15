@@ -301,14 +301,13 @@ void printNetworksMenu(size_t index) {
  * @param node
  * @return
  */
-Result sendPacket(void * buffer, u16 node) {
-    printf("%d", strlen((char *)buffer));
+Result sendPacket(void * buffer, size_t buffLen, u16 node) {
     Result ret = 0;
     if(conntype == UDSCONTYPE_Spectator)
         return -3;
     if(node == NULL)
         node = UDS_BROADCAST_NETWORKNODEID;
-    ret = udsSendTo(node, data_channel, UDS_SENDFLAG_Default, buffer, sizeof(buffer));
+    ret = udsSendTo(node, data_channel, UDS_SENDFLAG_Default, buffer, buffLen);
     return ret;
 }
 
@@ -327,7 +326,7 @@ bool packetAvailable(bool nextEvent, bool wait) {
  * @param output
  * @return
  */
-Result pullPacket(void * output) {
+Result pullPacket(void *& output) {
     Result ret = 0;
     size_t tmpbuf_size = UDS_DATAFRAME_MAXSIZE;
     u32 *tmpbuf = (u32*)malloc(tmpbuf_size);
@@ -351,9 +350,7 @@ Result pullPacket(void * output) {
 
     if(actual_size)//If no data frame is available, udsPullPacket() will return actual_size=0.
     {
-        printf("%d", strlen((char *)tmpbuf));
-        printf("\t\"%s\" size=0x%08x from node 0x%x.\n", (char *)tmpbuf, actual_size, (unsigned int)src_NetworkNodeID);
-        //memcpy(output, tmpbuf, sizeof(tmpbuf));
+        memcpy(output, tmpbuf, actual_size);
         return ret;
     }
     free(tmpbuf);
@@ -457,15 +454,15 @@ void uds_test()
         //When the output from hidKeysHeld() changes, send it over the network.
         if(transfer_data != prev_transfer_data)//Spectators aren't allowed to send data.
         {
-            char *data = "Testing data";
-            printf("%d", strlen(data));
-            sendPacket(data, NULL);
+            char *data = "Testing data\0";
+            sendPacket(data, strlen((char *)data), NULL);
         }
         // pull data
         if(packetAvailable(false, false))//Check whether data is available via udsPullPacket().
         {
             void * buffer;
             ret = pullPacket(buffer);
+            printf("\t\"%s\"\n", (char *)buffer);
         }
 
         if(udsWaitConnectionStatusEvent(false, false))
