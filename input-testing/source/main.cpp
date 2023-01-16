@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <malloc.h>
+#include <vector>
 #include <errno.h>
 #include <stdarg.h>
 #include <unistd.h>
@@ -17,7 +18,7 @@
 const u32 receive_buffer_size = UDS_DEFAULT_RECVBUFSIZE;
 const u32 wlancommID = 0x48424200;
 const u8 data_channel = 1;
-const char AppDataString[0x11] = "Ur a kid ur a sq";
+const char AppDataString[0x11] = "Splatoon 3DS";
 const char *passphrase = "You're a squid now! You're a kid now!";
 
 _Static_assert(18 > sizeof(AppDataString), "AppDataString too long! Must be less than 16 chars.");
@@ -290,7 +291,6 @@ void printNetworksMenu(size_t index) {
         printf("%.*s", 10, tmp);
         printf("\t%s", name);
         printf("|\n\n");
-        free(tmp);
     }
     printf("  ====================================\n");
     consoleSelect(&topScreen);
@@ -305,7 +305,7 @@ Result sendPacket(void * buffer, size_t buffLen, u16 node) {
     Result ret = 0;
     if(conntype == UDSCONTYPE_Spectator)
         return -3;
-    if(node == NULL)
+    if(!node)
         node = UDS_BROADCAST_NETWORKNODEID;
     ret = udsSendTo(node, data_channel, UDS_SENDFLAG_Default, buffer, buffLen);
     return ret;
@@ -326,36 +326,24 @@ bool packetAvailable(bool nextEvent, bool wait) {
  * @param output
  * @return
  */
-Result pullPacket(void *& output) {
+std::vector<uint8_t> pullPacket() {
     Result ret = 0;
-    size_t tmpbuf_size = UDS_DATAFRAME_MAXSIZE;
-    u32 *tmpbuf = (u32*)malloc(tmpbuf_size);
-    output = (u32*)malloc(tmpbuf_size);
-
-    memset(tmpbuf, 0, tmpbuf_size);
-    if(tmpbuf == NULL)
-    {
-        printf("Failed to allocate tmpbuf for receiving data.\n");
-        terminateNetwork();
-        return -3;
-    }
+    std::vector<uint8_t> uds_buffer(UDS_DATAFRAME_MAXSIZE);
     size_t actual_size = 0;
     u16 src_NetworkNodeID = 0;
-    ret = udsPullPacket(&bindctx, tmpbuf, tmpbuf_size, &actual_size, &src_NetworkNodeID);
+    ret = udsPullPacket(&bindctx, uds_buffer.data(), uds_buffer.size(), &actual_size, &src_NetworkNodeID);
     if(R_FAILED(ret))
     {
         printf("udsPullPacket() returned 0x%08x.\n", (unsigned int)ret);
-        return ret;
     }
 
-    if(actual_size)//If no data frame is available, udsPullPacket() will return actual_size=0.
+    if(actual_size)
     {
-        memcpy(output, tmpbuf, actual_size);
-        return ret;
+        uds_buffer.resize(actual_size);
+        printf("%d\n\n", uds_buffer.size());
+        return uds_buffer;
     }
-    free(tmpbuf);
-    tmpbuf = NULL;
-    return ret;
+    return uds_buffer;
 }
 /**
  * DEBUG
@@ -440,7 +428,6 @@ void uds_test()
 
     printf("Press A to stop data transfer.\n");
 
-    Result ret = 0;
     while(1)
     {
         gspWaitForVBlank();
@@ -455,14 +442,13 @@ void uds_test()
         if(transfer_data != prev_transfer_data)//Spectators aren't allowed to send data.
         {
             char *data = "Testing data\0";
-            sendPacket(data, strlen((char *)data), NULL);
+            sendPacket(data, strlen((char *)data) + 1, NULL);
         }
         // pull data
         if(packetAvailable(false, false))//Check whether data is available via udsPullPacket().
         {
-            void * buffer;
-            ret = pullPacket(buffer);
-            printf("\t\"%s\"\n", (char *)buffer);
+            std::vector<uint8_t> buffer = pullPacket();
+            printf("\t\"%s\"\n", (char *)buffer.data());
         }
 
         if(udsWaitConnectionStatusEvent(false, false))
