@@ -30,7 +30,7 @@ namespace Network {
         udsNetworkScanInfo *networks = NULL;
         udsNetworkScanInfo *network = NULL;
         udsConnectionType conntype = UDSCONTYPE_Client;
-        size_t total_networks = 0;
+        size_t total_networks = 0, total_nodes = 0;
 
     public:
         /**
@@ -51,26 +51,21 @@ namespace Network {
             Result ret = 0;
             udsNetworkStruct networkstruct;
             udsGenerateDefaultNetworkStruct(&networkstruct, wlancommID, 0, UDS_MAXNODES);
+            #pragma GCC diagnostic ignored "-Wstringop-truncation"
             strncpy((char*)&appdata[4], AppDataString, sizeof(appdata)-4);
 
             printf("Creating the network...\n");
             ret = udsCreateNetwork(&networkstruct, passphrase, strlen(passphrase)+1, &bindctx, data_channel, receive_buffer_size);
             if(R_FAILED(ret))
             {
-                printf("udsCreateNetwork() returned 0x%08x.\n", (unsigned int)ret);
+                printf("udsCreateNetwork() failed: 0x%08x.\n", (unsigned int)ret);
                 return ret;
             }
 
             ret = udsSetApplicationData(appdata, sizeof(appdata));
             if(R_FAILED(ret))
             {
-                printf("udsSetApplicationData() returned 0x%08x.\n", (unsigned int)ret);
-                udsDestroyNetwork();
-                udsUnbind(&bindctx);
-                return ret;
-            }
-            if(R_FAILED(ret))
-            {
+                printf("udsSetApplicationData() failed: 0x%08x.\n", (unsigned int)ret);
                 udsDestroyNetwork();
                 udsUnbind(&bindctx);
                 return ret;
@@ -289,26 +284,6 @@ namespace Network {
         }
 
         /**
-         * Waits for the bind event to occur, or checks if the event was signaled.
-         * @param nextEvent
-         * @param wait
-         * @return
-         */
-        bool packetAvailable(bool nextEvent, bool wait) {
-            return udsWaitDataAvailable(&bindctx, nextEvent, wait);
-        }
-
-        /**
-         * Waits for the ConnectionStatus event to occur, or checks if the event was signaled.
-         * @param nextEvent
-         * @param wait
-         * @return
-         */
-        bool connectionStatusAvailable(bool nextEvent, bool wait) {
-            return udsWaitConnectionStatusEvent(nextEvent, wait);
-        }
-
-        /**
          * Pulls the latest packet from the buffer
          * @param src_NetworkNodeID
          * @return Packet buffer
@@ -329,6 +304,26 @@ namespace Network {
         }
 
         /**
+         * Waits for the bind event to occur, or checks if the event was signaled.
+         * @param nextEvent
+         * @param wait
+         * @return
+         */
+        bool packetAvailable(bool nextEvent, bool wait) {
+            return udsWaitDataAvailable(&bindctx, nextEvent, wait);
+        }
+
+        /**
+         * Waits for the ConnectionStatus event to occur, or checks if the event was signaled.
+         * @param nextEvent
+         * @param wait
+         * @return
+         */
+        bool connectionStatusAvailable(bool nextEvent, bool wait) {
+            return udsWaitConnectionStatusEvent(nextEvent, wait);
+        }
+
+        /**
          * Get udsConnectionStatus struct
          * @return udsConnectionStatus
          */
@@ -340,6 +335,46 @@ namespace Network {
             if(R_FAILED(ret))
                 printf("udsGetConnectionStatus() returned 0x%08x.\n", (unsigned int)ret);
             return constatus;
+        }
+
+        /**
+         * Determines what the status event was
+         * @param constatus
+         * @return
+         */
+        int parseStatus(udsConnectionStatus constatus) {
+
+            /*
+             * -1: Unknown state
+             *  1: Network created
+             *  2: Join network
+             *  3: Client connected to host
+             *  4: Client disconnected from host
+             *  5: Host network closed
+             */
+            switch (constatus.status) {
+                case 3:
+                    return 5;
+                case 6:
+                    if(total_nodes == 0) {
+                        total_nodes = constatus.total_nodes;
+                        return 1;
+                    }
+                    else if(constatus.total_nodes > total_nodes) {
+                        total_nodes = constatus.total_nodes;
+                        return 3;
+                    }
+                    else if(constatus.total_nodes < total_nodes) {
+                        total_nodes = constatus.total_nodes;
+                        return 4;
+                    }
+                    else
+                        return -1;
+                case 9:
+                    return 2;
+                default:
+                    return -1;
+            }
         }
     };
 }

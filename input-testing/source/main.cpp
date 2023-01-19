@@ -17,9 +17,14 @@
 
 #include "lib/network.h"
 
-// TODO: Remove for debugging
 PrintConsole topScreen, bottomScreen;
 Network::UDS UDSNet;
+
+static SwkbdState swkbd;
+static char keyboardBuf[60];
+static SwkbdStatusData swkbdStatus;
+static SwkbdLearningData swkbdLearning;
+SwkbdButton button = SWKBD_BUTTON_NONE;
 
 /**
  * DEBUG
@@ -120,17 +125,36 @@ void showMainMenu() {
     }
 }
 
+void keyboardInput() {
+    swkbdInit(&swkbd, SWKBD_TYPE_NORMAL, 3, -1);
+    swkbdSetInitialText(&swkbd, keyboardBuf);
+    swkbdSetHintText(&swkbd, "Message to send");
+    swkbdSetButton(&swkbd, SWKBD_BUTTON_LEFT, "Cancel", false);
+    swkbdSetButton(&swkbd, SWKBD_BUTTON_MIDDLE, "~Middle~", true);
+    swkbdSetButton(&swkbd, SWKBD_BUTTON_RIGHT, "Send", true);
+    swkbdSetFeatures(&swkbd, SWKBD_PREDICTIVE_INPUT);
+    static bool reload = false;
+    swkbdSetStatusData(&swkbd, &swkbdStatus, reload, true);
+    swkbdSetLearningData(&swkbd, &swkbdLearning, reload, true);
+    reload = true;
+    button = swkbdInputText(&swkbd, keyboardBuf, sizeof(keyboardBuf));
+
+    if (button != SWKBD_BUTTON_NONE)
+    {
+        printf("You pressed button %d\n", button);
+        printf("Text: %s\n", keyboardBuf);
+        if(button == 2)
+            UDSNet.sendPacket(keyboardBuf, strlen((char *)keyboardBuf) + 1, NULL);
+    } else
+        printf("swkbd event: %d\n", swkbdGetResult(&swkbd));
+}
+
 void uds_test()
 {
-    if(UDSNet.connectionStatusAvailable(false, false))
-    {
-        printf("Constatus event signaled.\n");
-    }
-
     showMainMenu();
 
     printf("Press A to stop data transfer.\n");
-    u32 transfer_data, prev_transfer_data = 0;
+    u32 transfer_data = 0, prev_transfer_data = 0;
     while(1)
     {
         gspWaitForVBlank();
@@ -138,6 +162,11 @@ void uds_test()
         u32 kDown = hidKeysDown();
 
         if(kDown & KEY_A)break;
+
+        if(kDown & KEY_B) {
+            keyboardInput();
+            continue;
+        }
         prev_transfer_data = transfer_data;
         transfer_data = hidKeysHeld();
 
@@ -145,6 +174,7 @@ void uds_test()
         if(transfer_data != prev_transfer_data)//Spectators aren't allowed to send data.
         {
             char *data = "Testing data\0";
+            #pragma GCC diagnostic ignored "-Wconversion-null"
             UDSNet.sendPacket(data, strlen((char *)data) + 1, NULL);
         }
         // pull data
@@ -158,10 +188,27 @@ void uds_test()
 
         if(UDSNet.connectionStatusAvailable(false, false))
         {
-            printf("\n\nConstatus event signaled.\n");
-            udsConnectionStatus constatus = UDSNet.getConnStatus();
-            printf("status=0x%x\n", (unsigned int)constatus.status);
-            printf("node_bitmask=0x%x\n", (unsigned int)constatus.total_nodes);
+            int status = UDSNet.parseStatus(UDSNet.getConnStatus());
+            switch(status) {
+                case -1:
+                    printf("[Connection Status] Unknown 0x6 State\n");
+                    break;
+                case 1:
+                    printf("[Connection Status] Network Created\n");
+                    break;
+                case 2:
+                    printf("[Connection Status] Joined Network\n");
+                    break;
+                case 3:
+                    printf("[Connection Status] Client Connected\n");
+                    break;
+                case 4:
+                    printf("[Connection Status] Client Disconnected\n");
+                    break;
+                case 5:
+                    printf("[Connection Status] Host Terminated Network\n");
+                    break;
+            }
         }
     }
 
