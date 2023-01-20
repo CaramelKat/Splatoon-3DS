@@ -81,58 +81,33 @@ namespace Network {
          * @param spectator
          */
         Result connectToNetwork(int index, bool spectator) {
-            //At this point you'd let the user select which network to connect to and optionally display the first node's username(the host),
-            // along with the parsed appdata if you want. For this example this just uses the first detected network and then displays the username of each node.
-            //If appdata isn't enough, you can do what DLP does loading the icon data etc: connect to the network as a spectator temporarily for receiving broadcasted data frames.
             Result ret = 0;
-            char tmpstr[255];
             if(!total_networks)
                 return ret;
             network = &networks[index];
 
-            printf("network: total nodes = %u.\n", (unsigned int)network->network.total_nodes);
-
-            for(u32 i = 0; i < UDS_MAXNODES; i++)
-            {
-                if(!udsCheckNodeInfoInitialized(&network->nodes[i])) continue;
-
-                memset(tmpstr, 0, sizeof(tmpstr));
-
-                ret = udsGetNodeInfoUsername(&network->nodes[i], tmpstr);
-                if(R_FAILED(ret))
-                {
-                    printf("udsGetNodeInfoUsername() returned 0x%08x.\n", (unsigned int)ret);
-                    free(networks);
-                    return ret;
-                }
-
-                printf("node%u username: %s\n", (unsigned int)i, tmpstr);
-            }
-
             if(spectator)
             {
                 conntype = UDSCONTYPE_Spectator;
-                printf("Connecting to the network as a spectator...\n");
+                printf("[Info: connectToNetwork] Connecting to the network as a spectator...\n");
             }
             else
-                printf("Connecting to the network as a client...\n");
+                printf("[Info: connectToNetwork] Connecting to the network as a client...\n");
             for(u32 i = 0; i < 10; i++)
             {
                 ret = udsConnectNetwork(&network->network, passphrase, strlen(passphrase)+1, &bindctx, UDS_BROADCAST_NETWORKNODEID, conntype, data_channel, receive_buffer_size);
                 if(R_FAILED(ret))
                 {
-                    printf("udsConnectNetwork() returned 0x%08x.\n", (unsigned int)ret);
+                    printf("[Error: connectToNetwork] udsConnectNetwork() returned %u.\n", (unsigned int)ret);
+                    printf("[Error: connectToNetwork] Unable to connect to selected network.\n");
                     return ret;
                 }
-                else
-                {
-                    break;
-                }
+                else break;
             }
 
             free(networks);
             con_type = 1;
-            printf("Connected.\n");
+            printf("[Info: connectToNetwork] Connected.\n");
             return ret;
         }
 
@@ -151,16 +126,13 @@ namespace Network {
             if(tmpbuf == NULL)
             {
                 printf("[Error: searchForNetworks] Failed to allocate tmpbuf for beacon data.\n");
-                return network_count;
+                return -1;
             }
-            //With normal client-side handling you'd keep running network-scanning until the user chooses to stops scanning or selects a network to connect to. This example just scans a maximum of 10 times until at least one network is found.
             for(int i = 0; i < iterations; i++)
             {
                 memset(tmpbuf, 0, sizeof(tmpbuf_size));
                 udsScanBeacons(tmpbuf, tmpbuf_size, &networks, &network_count, wlancommID, 0, NULL, false);
-                printf("[Info: searchForNetworks] total_networks=%u.\n", (unsigned int)network_count);
             }
-
             free(tmpbuf);
             tmpbuf = NULL;
             total_networks = network_count;
