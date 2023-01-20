@@ -40,12 +40,10 @@ void printNetworksMenu(size_t index) {
         printf("  ====================================\n\n");
         if(i == index) printf("> ");
         else printf("| ");
-        char *tmp = new char[0x14];
-        char *name = new char[0x0b];
-        UDSNet.getNetworkAppData(i, tmp);
-        UDSNet.getNetworkOwnerUsername(i, name);
-        printf("%.*s", 10, tmp);
-        printf("\t%s", name);
+        std::vector<char> appdata = UDSNet.getNetworkAppData(i);
+        std::vector<char> name = UDSNet.getNetworkOwnerUsername(i);
+        printf("%.*s", 12, appdata.data());
+        printf("\t\t%s", name.data());
         printf("|\n\n");
     }
     printf("  ====================================\n");
@@ -141,8 +139,7 @@ void keyboardInput() {
 
     if (button != SWKBD_BUTTON_NONE)
     {
-        printf("You pressed button %d\n", button);
-        printf("Text: %s\n", keyboardBuf);
+        printf("\n[You]: %s\n", keyboardBuf);
         if(button == 2)
             UDSNet.sendPacket(keyboardBuf, strlen((char *)keyboardBuf) + 1, NULL);
     } else
@@ -182,8 +179,8 @@ void uds_test()
         {
             u16 src_NetworkNodeID = 0;
             std::vector<uint8_t> buffer = UDSNet.pullPacket(src_NetworkNodeID);
-            printf("\t\"%s\"\n", (char *)buffer.data());
-            printf("%d\n\n", src_NetworkNodeID);
+            std::vector<char> username = UDSNet.getNodeUsername(src_NetworkNodeID);
+            printf("\n[%s]: %s\n", (char *)username.data(), (char *)buffer.data());
         }
 
         if(UDSNet.connectionStatusAvailable(false, false))

@@ -94,7 +94,7 @@ namespace Network {
 
             for(u32 i = 0; i < UDS_MAXNODES; i++)
             {
-                if(!udsCheckNodeInfoInitialized(&network->nodes[i]))continue;
+                if(!udsCheckNodeInfoInitialized(&network->nodes[i])) continue;
 
                 memset(tmpstr, 0, sizeof(tmpstr));
 
@@ -115,9 +115,7 @@ namespace Network {
                 printf("Connecting to the network as a spectator...\n");
             }
             else
-            {
                 printf("Connecting to the network as a client...\n");
-            }
             for(u32 i = 0; i < 10; i++)
             {
                 ret = udsConnectNetwork(&network->network, passphrase, strlen(passphrase)+1, &bindctx, UDS_BROADCAST_NETWORKNODEID, conntype, data_channel, receive_buffer_size);
@@ -150,18 +148,17 @@ namespace Network {
 
             tmpbuf_size = 0x4000;
             tmpbuf = (u32*)malloc(tmpbuf_size);
-            if(tmpbuf==NULL)
+            if(tmpbuf == NULL)
             {
-                printf("Failed to allocate tmpbuf for beacon data.\n");
+                printf("[Error: searchForNetworks] Failed to allocate tmpbuf for beacon data.\n");
                 return network_count;
             }
-
             //With normal client-side handling you'd keep running network-scanning until the user chooses to stops scanning or selects a network to connect to. This example just scans a maximum of 10 times until at least one network is found.
             for(int i = 0; i < iterations; i++)
             {
                 memset(tmpbuf, 0, sizeof(tmpbuf_size));
                 udsScanBeacons(tmpbuf, tmpbuf_size, &networks, &network_count, wlancommID, 0, NULL, false);
-                printf("total_networks=%u.\n", (unsigned int)network_count);
+                printf("[Info: searchForNetworks] total_networks=%u.\n", (unsigned int)network_count);
             }
 
             free(tmpbuf);
@@ -174,16 +171,14 @@ namespace Network {
          * Returns number of available networks
          * @return total_networks
          */
-        size_t getNumberOfNetworks() {
-            return total_networks;
-        }
+        size_t getNumberOfNetworks() { return total_networks; }
 
         /**
          * Gets the appdata for the specified network
          * @param index index of network to parse app data from
-         * @param output char* to store output
+         * @return appdata
          */
-        void getNetworkAppData(int index, char* output) {
+        std::vector<char> getNetworkAppData(int index) {
             Result ret = 0;
             u8 out_appdata[0x14];
             udsNetworkScanInfo *tmpNetwork = &networks[index];
@@ -193,78 +188,56 @@ namespace Network {
 
             if(R_FAILED(ret) || actual_size!=sizeof(out_appdata))
             {
-                printf("udsGetNetworkStructApplicationData() returned 0x%08x. actual_size = 0x%x.\n", (unsigned int)ret, actual_size);
+                printf("[Error: getNetworkAppData] udsGetNetworkStructApplicationData() returned 0x%08x.\n", (unsigned int)ret);
                 free(networks);
             }
             if(memcmp(out_appdata, appdata, 4)!=0)
             {
-                printf("The first 4-bytes of appdata is invalid.\n");
+                printf("[Error: getNetworkAppData] The first 4-bytes of appdata is invalid.\n");
                 free(networks);
             }
-
-            strcpy(output, (char*)&out_appdata[4]);
+            std::vector<char> output(0x14);
+            strcpy(output.data(), (char*)&out_appdata[4]);
+            return output;
         }
 
         /**
          * Get a specified network's host username
          * @param index
-         * @param output
+         * @return username
          */
-        void getNetworkOwnerUsername(int index, char* output) {
+        std::vector<char> getNetworkOwnerUsername(u16 index) {
             Result ret = 0;
-            char tmpstr[0x0b];
+            std::vector<char> username(0x0b);
             if(!udsCheckNodeInfoInitialized(&networks[index].nodes[0]))
-                return;
+                return username;
 
-            memset(tmpstr, 0, sizeof(tmpstr));
-
-            ret = udsGetNodeInfoUsername(&networks[index].nodes[0], tmpstr);
+            ret = udsGetNodeInfoUsername(&networks[index].nodes[0], username.data());
             if(R_FAILED(ret))
             {
-                printf("udsGetNodeInfoUsername() returned 0x%08x.\n", (unsigned int)ret);
+                printf("[Error: getNetworkOwnerUsername] udsGetNodeInfoUsername() returned 0x%08x.\n", (unsigned int)ret);
                 free(networks);
             }
 
-            strcpy(output, tmpstr);
+            return username;
         }
 
         /**
-         * Prevent new connections
-         * @param connections
+         * Get a specified client's username
+         * @param index
+         * @return username
          */
-        Result blockNewConnections(bool connections) {
-            if(con_type == 1)
-                return udsSetNewConnectionsBlocked(connections, true, false);
-            return -3;
-        }
-
-        /**
-         * Prevent spectators from joining network
-         * @param spectators
-         */
-        Result blockSpectators(bool spectators) {
+        std::vector<char> getNodeUsername(u16 index) {
             Result ret = 0;
-            if(spectators)
-                ret = udsEjectSpectator();
-            else
-                ret = udsAllowSpectators();
-            return ret;
-        }
-
-        /**
-         * Terminates the network. If host, it disconnects all users
-         * if a client, disconnects from the network
-         * @return Result
-         */
-        Result terminateNetwork() {
-            Result ret = 0;
-            if(con_type)
-                ret = udsDestroyNetwork();
-            else
-                ret = udsDisconnectNetwork();
-            udsUnbind(&bindctx);
-            udsExit();
-            return ret;
+            std::vector<char> username(0x0b);
+            udsNodeInfo output;
+            ret = udsGetNodeInformation(index, &output);
+            if(R_FAILED(ret))
+                printf("[Error: getNodeUsername] udsGetNodeInformation() returned 0x%08x.\n", (unsigned int)ret);
+            ret = udsGetNodeInfoUsername(&output, username.data());
+            if(R_FAILED(ret))
+                printf("[Error: getNodeUsername] udsGetNodeInfoUsername() returned 0x%08x.\n", (unsigned int)ret);
+            return username;
         }
 
         /**
@@ -307,11 +280,9 @@ namespace Network {
          * Waits for the bind event to occur, or checks if the event was signaled.
          * @param nextEvent
          * @param wait
-         * @return
+         * @return packet availability
          */
-        bool packetAvailable(bool nextEvent, bool wait) {
-            return udsWaitDataAvailable(&bindctx, nextEvent, wait);
-        }
+        bool packetAvailable(bool nextEvent, bool wait) { return udsWaitDataAvailable(&bindctx, nextEvent, wait); }
 
         /**
          * Waits for the ConnectionStatus event to occur, or checks if the event was signaled.
@@ -319,9 +290,7 @@ namespace Network {
          * @param wait
          * @return
          */
-        bool connectionStatusAvailable(bool nextEvent, bool wait) {
-            return udsWaitConnectionStatusEvent(nextEvent, wait);
-        }
+        bool connectionStatusAvailable(bool nextEvent, bool wait) { return udsWaitConnectionStatusEvent(nextEvent, wait); }
 
         /**
          * Get udsConnectionStatus struct
@@ -330,7 +299,6 @@ namespace Network {
         udsConnectionStatus getConnStatus() {
             Result ret = 0;
             udsConnectionStatus constatus;
-
             ret = udsGetConnectionStatus(&constatus);
             if(R_FAILED(ret))
                 printf("udsGetConnectionStatus() returned 0x%08x.\n", (unsigned int)ret);
@@ -340,10 +308,9 @@ namespace Network {
         /**
          * Determines what the status event was
          * @param constatus
-         * @return
+         * @return status
          */
         int parseStatus(udsConnectionStatus constatus) {
-
             /*
              * -1: Unknown state
              *  1: Network created
@@ -375,6 +342,45 @@ namespace Network {
                 default:
                     return -1;
             }
+        }
+
+        /**
+         * Prevent new connections
+         * @param connections
+         */
+        Result blockNewConnections(bool connections) {
+            if(con_type == 1)
+                return udsSetNewConnectionsBlocked(connections, true, false);
+            return -3;
+        }
+
+        /**
+         * Prevent spectators from joining network
+         * @param spectators
+         */
+        Result blockSpectators(bool spectators) {
+            Result ret = 0;
+            if(spectators)
+                ret = udsEjectSpectator();
+            else
+                ret = udsAllowSpectators();
+            return ret;
+        }
+
+        /**
+         * Terminates the network. If host, it disconnects all users
+         * if a client, disconnects from the network
+         * @return Result
+         */
+        Result terminateNetwork() {
+            Result ret = 0;
+            if(con_type)
+                ret = udsDestroyNetwork();
+            else
+                ret = udsDisconnectNetwork();
+            udsUnbind(&bindctx);
+            udsExit();
+            return ret;
         }
     };
 }
