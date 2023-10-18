@@ -69,11 +69,6 @@ Gfx::State::State() {
     C3D_TexEnvSrc(env, C3D_Both, GPU_PRIMARY_COLOR, GPU_PREVIOUS);
     C3D_TexEnvFunc(env, C3D_Both, GPU_MODULATE);
 #endif
-    //TODO: modulating with null texture darkens the shape
-    /*env = C3D_GetTexEnv(2);
-    C3D_TexEnvInit(env);
-    C3D_TexEnvSrc(env, C3D_Both, GPU_PREVIOUS, GPU_TEXTURE0);
-    C3D_TexEnvFunc(env, C3D_RGB, GPU_MODULATE);*/
 
     // This should probably move to each Model if it's not costly
     static const C3D_Material material = {

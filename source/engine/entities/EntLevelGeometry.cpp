@@ -22,7 +22,7 @@ EntLevelGeometry::EntLevelGeometry(Model &model, std::string name) :
 
     auto c = colours.begin();
     while (c != colours.end()) {
-        auto colour = rgb::fromHsv(distribution(gen), 1.0f, 1.0f);
+        auto colour = rgb::fromHsv(distribution(gen), 0.2f, 1.0f);
         c = std::fill_n(c, 3, colour);
     }
 }

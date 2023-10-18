@@ -6,7 +6,7 @@
 #include "Model.h"
 #include "3mdl.h"
 #include "util.h"
-#include "concrete_t3x.h"
+#include "miku_t3x.h"
 #include <cstdio>
 #include <tex3ds.h>
 
@@ -42,9 +42,13 @@ Model::Model(const std::string& path) {
 
     fclose(fd);
 
-    if (!loadTextureFromMem(&texture, NULL, concrete_t3x, concrete_t3x_size))
-        svcBreak(USERBREAK_PANIC);
-    C3D_TexSetFilter(&texture, GPU_NEAREST, GPU_NEAREST);
+    if (path.find("miku") != std::string::npos) {
+        if (!loadTextureFromMem(&texture, NULL, miku_t3x, miku_t3x_size))
+            svcBreak(USERBREAK_PANIC);
+        C3D_TexSetFilter(&texture, GPU_NEAREST, GPU_NEAREST);
+    } else {
+        texture.data = nullptr;
+    }
 
     valid = true;
 }
@@ -75,8 +79,15 @@ void Model::Draw(Gfx::State& gfx, C3D_Mtx model_matrix, std::span<colour_type> c
         BufInfo_Add(bufInfo, colours.data(), sizeof(colours[0]), 1, 0x3);
     }
 
-    // Bind texture
-    C3D_TexBind(0, &texture);
+    C3D_TexEnv *env = C3D_GetTexEnv(TEXTURE_TEXENV);
+    C3D_TexEnvInit(env);
+    if (texture.data) {
+        // Bind texture
+        C3D_TexBind(0, &texture);
+
+        C3D_TexEnvSrc(env, C3D_Both, GPU_PREVIOUS, GPU_TEXTURE0);
+        C3D_TexEnvFunc(env, C3D_RGB, GPU_MODULATE);
+    }
 
     if (indexes.empty()) {
         C3D_DrawArrays(GPU_TRIANGLES, 0, vertexes.size());

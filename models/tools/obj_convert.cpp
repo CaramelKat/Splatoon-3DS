@@ -5,6 +5,8 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
+#include <cmath>
+#include <cstdint>
 #include <vector>
 
 using vec2 = struct { float x; float y; };
@@ -17,7 +19,7 @@ using vertex = struct { vec3 position; vec2 uv; vec3 normal; };
 
 // Returns true iif v1 can be considered equal to v2
 bool is_near(float v1, float v2){
-    return fabs( v1-v2 ) < 0.01f;
+    return std::fabs( v1-v2 ) < 0.01f;
 }
 
 // Searches through all already-exported vertices

@@ -7,6 +7,8 @@
 
 #include <citro3d.h>
 
+#define TEXTURE_TEXENV 2
+
 namespace Gfx {
     const bool left_hand = false;
     const C3D_FVec Up = FVec3_New(0.0f, 1.0f, 0.0f);

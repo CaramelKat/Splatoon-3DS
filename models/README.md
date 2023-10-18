@@ -1,6 +1,8 @@
 # 3mdl models
 We convert all the .obj files (a normal 3D model format) into custom .3mdl files using the obj_convert tool in the tools/ folder.
 
+Any .obj files placed into this folder will be automatically converted and included in the romfs.
+
 ## Rationale
 
 3D models are cool, and so is the .obj file format, but it has a key problem on 3DS - it can mix and match indexes for the positions, normals, and uv. The 3DS wants all attributes to have the same index. Apparently this is an issue for OpenGL too, which is very funny.
