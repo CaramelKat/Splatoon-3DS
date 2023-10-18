@@ -8,6 +8,7 @@
 #include "gfx/Gfx.h"
 #include "engine/Map.h"
 #include "util.h"
+#include "engine/entities/EntPlayer.h"
 
 #define CLEAR_COLOR 0x68B0D8FF
 
@@ -52,6 +53,8 @@ int main()
         LOG("level load failed!");
     }
 
+    auto player = level.AddDynamicEntity<EntPlayer>("miku");
+
     // Main loop
     while (aptMainLoop())
     {
@@ -68,11 +71,15 @@ int main()
         if (kDown & KEY_DOWN)
             gfx.t.camera_position.y -= 0.5f;
 
-        if (kDown & KEY_RIGHT)
-            gfx.t.camera_position.x += 0.5f;
+        if (kDown & KEY_RIGHT) {
+            player->move({1.0});
+            gfx.t.camera_target = C3D_FVec(player->position());
+        }
 
-        if (kDown & KEY_LEFT)
-            gfx.t.camera_position.x -= 0.5f;
+        if (kDown & KEY_LEFT) {
+            player->move({-1.0});
+            gfx.t.camera_target = C3D_FVec(player->position());
+        }
 
         printf("\x1b[29;1Hgpu: %5.2f%%  cpu: %5.2f%%  buf:%5.2f%%\n",
                C3D_GetDrawingTime()*3, C3D_GetProcessingTime()*3, C3D_GetCmdBufUsage()*100
