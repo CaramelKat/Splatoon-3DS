@@ -8,6 +8,7 @@
 #include "gfx/Gfx.h"
 #include "engine/Map.h"
 #include "util.h"
+#include "gyro.h"
 #include "engine/entities/EntPlayer.h"
 
 #define CLEAR_COLOR 0x68B0D8FF
@@ -42,6 +43,9 @@ int main()
     C3D_RenderTarget* target = C3D_RenderTargetCreate(240, 400, GPU_RB_RGBA8, GPU_RB_DEPTH24_STENCIL8);
     C3D_RenderTargetSetOutput(target, GFX_TOP, GFX_LEFT, DISPLAY_TRANSFER_FLAGS);
 
+    // Initialise input
+    gyro_init();
+
     // Initialize the scene
     Gfx::State gfx;
     gfx.t.camera_position = FVec3_New(0.0f, 2.0f, 4.0f);
@@ -55,6 +59,8 @@ int main()
 
     auto player = level.AddDynamicEntity<EntPlayer>("miku");
 
+    float camera_distance = 2.0f;
+
     // Main loop
     while (aptMainLoop())
     {
@@ -62,24 +68,55 @@ int main()
 
         // Respond to user input
         u32 kDown = hidKeysDown();
+        u32 kHeld = hidKeysHeld();
         if (kDown & KEY_START)
             break; // break in order to return to hbmenu
 
-        if (kDown & KEY_UP)
-            gfx.t.camera_position.y += 0.5f;
+        if (kHeld & KEY_UP)
+            player->move(+0.2);
 
-        if (kDown & KEY_DOWN)
-            gfx.t.camera_position.y -= 0.5f;
+        if (kHeld & KEY_DOWN)
+            player->move(-0.2);
 
-        if (kDown & KEY_RIGHT) {
-            player->move({1.0});
-            gfx.t.camera_target = C3D_FVec(player->position());
-        }
+        if (kHeld & KEY_RIGHT)
+            player->rotate({0.0, -M_PI / 32, 0.0});
 
-        if (kDown & KEY_LEFT) {
-            player->move({-1.0});
-            gfx.t.camera_target = C3D_FVec(player->position());
-        }
+        if (kHeld & KEY_LEFT)
+            player->rotate({0.0, +M_PI / 32, 0.0});
+
+        if (kDown & KEY_X)
+            gyro_setHome();
+
+        if (kDown & KEY_CSTICK_UP)
+            camera_distance += 0.5;
+
+        if (kDown & KEY_CSTICK_DOWN)
+            camera_distance -= 0.5;
+
+        // Update camera position (TODO gyro)
+        const float sensitivity = 0.1;
+
+        gyro_update();
+        printf("\x1b[26;1Hgyro: (%0.2f, %0.2f)\n",
+               roll, pitch
+        );
+
+        auto pos = player->head_position();
+        auto rot = player->rotation();
+        gfx.t.camera_target = C3D_FVec(pos);
+        // todo move this to vector.h
+        gfx.t.camera_position = C3D_FVec {
+                .w = 0.0,
+                .z = pos.z + cos(rot.y + roll * sensitivity) * -camera_distance,
+                .y = pos.y + camera_distance * (pitch * sensitivity),
+                .x = pos.x + sin(rot.y + roll * sensitivity) * -camera_distance,
+        };
+
+        printf("\x1b[27;1Hplayer: (%0.2f, %0.2f, %0.2f)\n"
+               "\x1b[28;1Hcamera: (%0.2f, %0.2f, %0.2f)\n",
+               pos.x, pos.y, pos.z,
+               gfx.t.camera_position.x, gfx.t.camera_position.y, gfx.t.camera_position.z
+        );
 
         printf("\x1b[29;1Hgpu: %5.2f%%  cpu: %5.2f%%  buf:%5.2f%%\n",
                C3D_GetDrawingTime()*3, C3D_GetProcessingTime()*3, C3D_GetCmdBufUsage()*100
