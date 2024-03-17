@@ -12,6 +12,9 @@
 #include "engine/entities/EntPlayer.h"
 
 #define CLEAR_COLOR 0x68B0D8FF
+#define CIRCLE_PAD_DEAD_ZONE 10
+#define CIRCLE_PAD_MAX 155.0
+#define C_STICK_MAX 155.0 //Why is this different Nintendo???
 
 #define DISPLAY_TRANSFER_FLAGS \
     (GX_TRANSFER_FLIP_VERT(0) | GX_TRANSFER_OUT_TILED(0) | GX_TRANSFER_RAW_COPY(0) | \
@@ -69,32 +72,39 @@ int main()
         // Respond to user input
         u32 kDown = hidKeysDown();
         u32 kHeld = hidKeysHeld();
+		circlePosition leftCirclePad, rightCirclePad;
+		// Range is -155.0 -> 155.0; * 10 to bring the scale down
+		float circlePadScale = CIRCLE_PAD_MAX * 10;
+		// Range is -146.0 -> 146; We're adjusting the speed of the camera,
+		// Default scale is 32, so we want to ramp up to that point, hence 
+		// subtracting down from 64. Still playing with these so they feel good 
+		float cStickScale = 80.0 - abs(rightCirclePad.dx / C_STICK_MAX * 35);
+		float cStickDirection = rightCirclePad.dx < 0 ? 1 : -1;
+
+		hidCircleRead(&leftCirclePad);
+		irrstCstickRead(&rightCirclePad);
+
         if (kDown & KEY_START)
             break; // break in order to return to hbmenu
 
-        if (kHeld & KEY_UP)
-            player->move(+0.2);
+		if (abs(leftCirclePad.dy) > CIRCLE_PAD_DEAD_ZONE || abs(leftCirclePad.dx) > CIRCLE_PAD_DEAD_ZONE)
+        	player->move(leftCirclePad.dy / circlePadScale, -leftCirclePad.dx / circlePadScale);
 
-        if (kHeld & KEY_DOWN)
-            player->move(-0.2);
+		
+		if (cStickScale < 80)
+			player->rotate({0.0, M_PI * cStickDirection / cStickScale, 0.0});
 
-        if (kHeld & KEY_RIGHT)
-            player->rotate({0.0, -M_PI / 32, 0.0});
-
-        if (kHeld & KEY_LEFT)
-            player->rotate({0.0, +M_PI / 32, 0.0});
-
-        if (kDown & KEY_X)
+        if (kDown & KEY_Y)
             gyro_setHome();
 
-        if (kDown & KEY_CSTICK_UP)
+    	if (kDown & KEY_DUP)
             camera_distance += 0.5;
 
-        if (kDown & KEY_CSTICK_DOWN)
+        if (kDown & KEY_DDOWN)
             camera_distance -= 0.5;
 
         // Update camera position (TODO gyro)
-        const float sensitivity = 0.1;
+        const float sensitivity = 0.05;
 
         gyro_update();
         printf("\x1b[26;1Hgyro: (%0.2f, %0.2f)\n",
@@ -107,19 +117,23 @@ int main()
         // todo move this to vector.h
         gfx.t.camera_position = C3D_FVec {
                 .w = 0.0,
-                .z = pos.z + cos(rot.y + roll * sensitivity) * -camera_distance,
+                .z = pos.z + cos(roll * sensitivity * -1) * -camera_distance,
                 .y = pos.y + camera_distance * (pitch * sensitivity),
-                .x = pos.x + sin(rot.y + roll * sensitivity) * -camera_distance,
+                .x = pos.x + sin(roll * sensitivity * -1) * -camera_distance,
         };
 
-        printf("\x1b[27;1Hplayer: (%0.2f, %0.2f, %0.2f)\n"
-               "\x1b[28;1Hcamera: (%0.2f, %0.2f, %0.2f)\n",
+        printf("\x1b[26;1Hplayer: (%0.2f, %0.2f, %0.2f)\n"
+               "\x1b[27;1Hcamera: (%0.2f, %0.2f, %0.2f)\n",
                pos.x, pos.y, pos.z,
                gfx.t.camera_position.x, gfx.t.camera_position.y, gfx.t.camera_position.z
         );
 
-        printf("\x1b[29;1Hgpu: %5.2f%%  cpu: %5.2f%%  buf:%5.2f%%\n",
+        printf("\x1b[28;1Hgpu: %5.2f%%  cpu: %5.2f%%  buf:%5.2f%%\n",
                C3D_GetDrawingTime()*3, C3D_GetProcessingTime()*3, C3D_GetCmdBufUsage()*100
+        );
+
+		printf("\x1b[29;1HC Stick: %0.2f, %0.2f     \n",
+               cStickScale, 32.0 - abs(rightCirclePad.dy / C_STICK_MAX * 10)
         );
 
         // Render the scene

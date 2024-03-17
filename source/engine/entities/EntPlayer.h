@@ -12,10 +12,14 @@ public:
     EntPlayer(Model& model, std::string name);
 
     // todo this sucks
-    void move(float distance) {
-        m_world_position.x += distance * sin(m_world_rotation.y);
-        m_world_position.z += distance * cos(m_world_rotation.y);
+    void move(float front_back, float left_right) {
+        //m_world_position.x += front_back;// * sin(m_world_rotation.y);
+        m_world_position.z += front_back;// * cos(m_world_rotation.y);
+
+		m_world_position.x += left_right;// * cos(m_world_rotation.y);
+        //m_world_position.z += left_right;// * -sin(m_world_rotation.y);
     }
+
     void rotate(vec3 off) {
         m_world_rotation += off;
     }
