@@ -13,8 +13,7 @@
 
 #define CLEAR_COLOR 0x68B0D8FF
 #define CIRCLE_PAD_DEAD_ZONE 10
-#define CIRCLE_PAD_MAX 155.0
-#define C_STICK_MAX 155.0 //Why is this different Nintendo???
+#define STICK_MAX 155.0
 
 #define DISPLAY_TRANSFER_FLAGS \
     (GX_TRANSFER_FLIP_VERT(0) | GX_TRANSFER_OUT_TILED(0) | GX_TRANSFER_RAW_COPY(0) | \
@@ -74,12 +73,7 @@ int main()
         u32 kHeld = hidKeysHeld();
 		circlePosition leftCirclePad, rightCirclePad;
 		// Range is -155.0 -> 155.0; * 10 to bring the scale down
-		float circlePadScale = CIRCLE_PAD_MAX * 10;
-		// Range is -146.0 -> 146; We're adjusting the speed of the camera,
-		// Default scale is 32, so we want to ramp up to that point, hence 
-		// subtracting down from 64. Still playing with these so they feel good 
-		float cStickScale = 80.0 - abs(rightCirclePad.dx / C_STICK_MAX * 35);
-		float cStickDirection = rightCirclePad.dx < 0 ? 1 : -1;
+		float circlePadScale = STICK_MAX * 10;
 
 		hidCircleRead(&leftCirclePad);
 		irrstCstickRead(&rightCirclePad);
@@ -88,11 +82,7 @@ int main()
             break; // break in order to return to hbmenu
 
 		if (abs(leftCirclePad.dy) > CIRCLE_PAD_DEAD_ZONE || abs(leftCirclePad.dx) > CIRCLE_PAD_DEAD_ZONE)
-        	player->move(leftCirclePad.dy / circlePadScale, -leftCirclePad.dx / circlePadScale);
-
-		
-		if (cStickScale < 80)
-			player->rotate({0.0, M_PI * cStickDirection / cStickScale, 0.0});
+        	player->move(gfx.t.camera_position, gfx.t.camera_target, leftCirclePad.dy / circlePadScale, leftCirclePad.dx / circlePadScale);
 
         if (kDown & KEY_Y)
             gyro_setHome();
@@ -105,11 +95,15 @@ int main()
 
         // Update camera position (TODO gyro)
         const float sensitivity = 0.05;
+		const float stickSensitivity = 1.0;
 
         gyro_update();
         printf("\x1b[26;1Hgyro: (%0.2f, %0.2f)\n",
                roll, pitch
         );
+
+		// Update the roll angle based on the right circle pad input
+		roll += (rightCirclePad.dx / STICK_MAX) * stickSensitivity;
 
         auto pos = player->head_position();
         auto rot = player->rotation();
@@ -117,23 +111,19 @@ int main()
         // todo move this to vector.h
         gfx.t.camera_position = C3D_FVec {
                 .w = 0.0,
-                .z = pos.z + cos(roll * sensitivity * -1) * -camera_distance,
+                .z = pos.z + cos((roll) * sensitivity * -1) * -camera_distance,
                 .y = pos.y + camera_distance * (pitch * sensitivity),
-                .x = pos.x + sin(roll * sensitivity * -1) * -camera_distance,
+                .x = pos.x + sin((roll) * sensitivity * -1) * -camera_distance,
         };
 
-        printf("\x1b[26;1Hplayer: (%0.2f, %0.2f, %0.2f)\n"
-               "\x1b[27;1Hcamera: (%0.2f, %0.2f, %0.2f)\n",
+        printf("\x1b[27;1Hplayer: (%0.2f, %0.2f, %0.2f)\n"
+               "\x1b[28;1Hcamera: (%0.2f, %0.2f, %0.2f)\n",
                pos.x, pos.y, pos.z,
                gfx.t.camera_position.x, gfx.t.camera_position.y, gfx.t.camera_position.z
         );
 
-        printf("\x1b[28;1Hgpu: %5.2f%%  cpu: %5.2f%%  buf:%5.2f%%\n",
+        printf("\x1b[29;1Hgpu: %5.2f%%  cpu: %5.2f%%  buf:%5.2f%%\n",
                C3D_GetDrawingTime()*3, C3D_GetProcessingTime()*3, C3D_GetCmdBufUsage()*100
-        );
-
-		printf("\x1b[29;1HC Stick: %0.2f, %0.2f     \n",
-               cStickScale, 32.0 - abs(rightCirclePad.dy / C_STICK_MAX * 10)
         );
 
         // Render the scene

@@ -15,3 +15,4 @@ obj_convert
 # maps/
 *.3map
 map_assembler
+.vscode/settings.json
